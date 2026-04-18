@@ -45,6 +45,8 @@ export class LevelScene extends Phaser.Scene {
     this.hoveredTarget = null;
     this.waveMistakes = 0;
     this.promptLayoutKey = '';
+    this.targetLayoutKey = '';
+    this.phonePortraitLocked = false;
 
     const startingHearts = this.mode === 'quick' ? QUICK_PLAY_HEARTS : this.level.tier === 1 ? 4 : HEARTS;
 
@@ -127,7 +129,67 @@ export class LevelScene extends Phaser.Scene {
     this.fxLayer = this.add.container(0, 0).setDepth(DEPTHS.FX);
     this.prompt = null;
     this.waveIntro = null;
+    this.buildRotatePromptOverlay();
     this.applyCosmetics();
+  }
+
+  buildRotatePromptOverlay() {
+    this.rotateOverlay = this.add.container(0, 0).setDepth(DEPTHS.MODAL + 4).setVisible(false);
+    this.rotateOverlayDim = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x0a334c, 0.46).setOrigin(0);
+    this.rotateOverlayCard = this.add.graphics();
+    this.rotateOverlayPhone = this.add.graphics();
+    this.rotateOverlayArrow = this.add.graphics();
+    this.rotateOverlaySparkA = this.add.image(0, 0, 'spark').setScale(0.54).setAlpha(0.72);
+    this.rotateOverlaySparkB = this.add.image(0, 0, 'spark').setScale(0.38).setAlpha(0.52);
+    this.rotateOverlayTitle = this.add.text(0, 0, 'Rotate to Play', {
+      fontFamily: 'Fredoka',
+      fontSize: '36px',
+      fontStyle: '700',
+      color: '#fff9de',
+      stroke: '#1b5f8c',
+      strokeThickness: 10,
+      align: 'center',
+    }).setOrigin(0.5);
+    this.rotateOverlayBody = this.add.text(0, 0, 'Pirate battles fit best in landscape on iPhone.', {
+      fontFamily: 'Fredoka',
+      fontSize: '20px',
+      fontStyle: '600',
+      color: '#eaf8ff',
+      stroke: '#1b5f8c',
+      strokeThickness: 6,
+      align: 'center',
+      wordWrap: { width: 280 },
+    }).setOrigin(0.5);
+    this.rotateOverlayHint = this.add.text(0, 0, 'Turn your phone sideways for roomy targets and a clear question card.', {
+      fontFamily: 'Fredoka',
+      fontSize: '16px',
+      color: '#5e7f94',
+      stroke: '#ffffff',
+      strokeThickness: 6,
+      align: 'center',
+      wordWrap: { width: 280 },
+    }).setOrigin(0.5);
+
+    this.rotateOverlay.add([
+      this.rotateOverlayDim,
+      this.rotateOverlayCard,
+      this.rotateOverlayPhone,
+      this.rotateOverlayArrow,
+      this.rotateOverlaySparkA,
+      this.rotateOverlaySparkB,
+      this.rotateOverlayTitle,
+      this.rotateOverlayBody,
+      this.rotateOverlayHint,
+    ]);
+
+    this.tweens.add({
+      targets: [this.rotateOverlaySparkA, this.rotateOverlaySparkB],
+      alpha: { from: 0.28, to: 0.88 },
+      scale: { from: 0.26, to: 0.66 },
+      duration: 1200,
+      yoyo: true,
+      repeat: -1,
+    });
   }
 
   buildHud() {
@@ -256,16 +318,16 @@ export class LevelScene extends Phaser.Scene {
     const prompt = mode === 'phone-portrait'
       ? {
           x: this.scale.width * 0.5,
-          y: safe.top + 206,
+          y: safe.top + 208,
           width: Math.min(safe.width - 10, 336),
           height: 168,
         }
       : mode === 'phone-landscape'
         ? {
-            x: this.scale.width * 0.49,
-            y: safe.top + 128,
-            width: Math.min(this.scale.width * 0.48, 386),
-            height: 134,
+            x: this.scale.width * 0.5,
+            y: safe.top + 112,
+            width: Math.min(safe.width - 140, 500),
+            height: 118,
           }
         : mode === 'tablet-portrait'
           ? {
@@ -303,18 +365,18 @@ export class LevelScene extends Phaser.Scene {
         ? {
             width: prompt.width,
             height: prompt.height,
-            radius: 26,
-            edgePad: 14,
-            titleAreaHeight: 54,
-            visualWidth: prompt.width - 22,
-            visualHeight: 54,
-            titleY: -28,
-            supportY: -2,
-            visualY: 34,
-            titleFontSize: 22,
-            supportFontSize: 13,
-            visualMaxWidth: prompt.width - 82,
-            visualMaxHeight: 40,
+            radius: 24,
+            edgePad: 12,
+            titleAreaHeight: 46,
+            visualWidth: prompt.width - 26,
+            visualHeight: 40,
+            titleY: -22,
+            supportY: 0,
+            visualY: 28,
+            titleFontSize: 20,
+            supportFontSize: 12,
+            visualMaxWidth: prompt.width - 84,
+            visualMaxHeight: 32,
             showSparkles: false,
           }
         : mode === 'tablet-portrait'
@@ -339,12 +401,41 @@ export class LevelScene extends Phaser.Scene {
               height: prompt.height,
             };
 
+    const gameplayBand = mode === 'phone-landscape'
+      ? {
+          top: Math.max(safe.top + 208, prompt.y + prompt.height / 2 + 34),
+          bottom: safe.bottom - 12,
+          left: safe.left + 112,
+          right: safe.right - 12,
+        }
+      : mode === 'tablet-portrait'
+        ? {
+            top: Math.max(safe.top + 360, prompt.y + prompt.height / 2 + 48),
+            bottom: safe.bottom - 26,
+            left: safe.left + 110,
+            right: safe.right - 28,
+          }
+        : mode === 'desktop' || mode === 'tablet-landscape'
+          ? {
+              top: Math.max(safe.top + 236, prompt.y + prompt.height / 2 + 44),
+              bottom: safe.bottom - 26,
+              left: safe.left + 140,
+              right: safe.right - 24,
+            }
+          : {
+              top: Math.max(safe.top + 244, prompt.y + prompt.height / 2 + 30),
+              bottom: safe.bottom - 16,
+              left: safe.left + 64,
+              right: safe.right - 16,
+            };
+
     return {
       metrics,
       safe,
       mode,
       prompt,
       promptLayout,
+      gameplayBand,
     };
   }
 
@@ -363,12 +454,152 @@ export class LevelScene extends Phaser.Scene {
     this.promptLayoutKey = layoutKey;
   }
 
+  setGameplayUiVisible(visible) {
+    [
+      this.island,
+      this.palm,
+      this.coveGlow,
+      this.cannonGlow,
+      this.cannonShadow,
+      this.cannon,
+      this.levelText,
+      this.scoreText,
+      this.waveText,
+      this.comboText,
+      this.hudLeftPanel,
+      this.hudCenterPanel,
+      this.hudRightPanel,
+      this.mapButton,
+      this.settingsButton,
+      this.restartButton,
+      this.prompt,
+      this.debugPanel,
+    ].forEach((item) => item?.setVisible(visible));
+
+    this.hearts.forEach((heart) => heart.setVisible(visible && heart.alpha > 0.01));
+    this.activeTargets.forEach((target) => target.container.setVisible(visible));
+  }
+
+  clearHudPanels() {
+    this.hudLeftPanel.clear().setVisible(false);
+    this.hudCenterPanel.clear().setVisible(false);
+    this.hudRightPanel.clear().setVisible(false);
+  }
+
+  layoutRotateOverlay(layout) {
+    const { width, height } = this.scale;
+    const { safe } = layout;
+    const cardWidth = Math.min(safe.width - 20, 330);
+    const cardHeight = 316;
+    const cardX = width * 0.5;
+    const cardY = height * 0.5;
+    const cardLeft = cardX - cardWidth / 2;
+    const cardTop = cardY - cardHeight / 2;
+
+    this.rotateOverlayDim.setDisplaySize(width, height);
+    this.rotateOverlayCard.clear();
+    this.rotateOverlayCard.fillStyle(0x0e4e71, 0.32);
+    this.rotateOverlayCard.fillRoundedRect(cardLeft, cardTop + 10, cardWidth, cardHeight, 34);
+    this.rotateOverlayCard.fillStyle(0xfff8e7, 0.98);
+    this.rotateOverlayCard.lineStyle(8, 0xffc86d, 1);
+    this.rotateOverlayCard.fillRoundedRect(cardLeft, cardTop, cardWidth, cardHeight, 34);
+    this.rotateOverlayCard.strokeRoundedRect(cardLeft, cardTop, cardWidth, cardHeight, 34);
+    this.rotateOverlayCard.fillStyle(0xffffff, 0.66);
+    this.rotateOverlayCard.fillRoundedRect(cardLeft + 18, cardTop + 20, cardWidth - 36, 64, 24);
+    this.rotateOverlayCard.fillStyle(0xffd56f, 0.16);
+    this.rotateOverlayCard.fillRoundedRect(cardLeft + 18, cardTop + 20, cardWidth - 36, 64, 24);
+
+    const phoneX = cardX;
+    const phoneY = cardTop + 156;
+    this.rotateOverlayPhone.clear();
+    this.rotateOverlayPhone.fillStyle(0x1a5678, 1);
+    this.rotateOverlayPhone.fillRoundedRect(phoneX - 26, phoneY - 56, 52, 90, 16);
+    this.rotateOverlayPhone.fillStyle(0xb9efff, 1);
+    this.rotateOverlayPhone.fillRoundedRect(phoneX - 18, phoneY - 44, 36, 60, 12);
+    this.rotateOverlayPhone.fillStyle(0xffd56f, 1);
+    this.rotateOverlayPhone.fillCircle(phoneX, phoneY + 22, 4);
+    this.rotateOverlayPhone.fillStyle(0x1a5678, 0.14);
+    this.rotateOverlayPhone.fillRoundedRect(phoneX + 48, phoneY - 28, 90, 52, 14);
+    this.rotateOverlayPhone.fillStyle(0xb9efff, 1);
+    this.rotateOverlayPhone.fillRoundedRect(phoneX + 56, phoneY - 20, 74, 36, 10);
+
+    this.rotateOverlayArrow.clear();
+    this.rotateOverlayArrow.lineStyle(8, 0xffaa47, 1);
+    this.rotateOverlayArrow.beginPath();
+    this.rotateOverlayArrow.arc(phoneX + 24, phoneY - 2, 46, Phaser.Math.DegToRad(-118), Phaser.Math.DegToRad(48), false);
+    this.rotateOverlayArrow.strokePath();
+    this.rotateOverlayArrow.fillStyle(0xffaa47, 1);
+    this.rotateOverlayArrow.fillPoints([
+      new Phaser.Geom.Point(phoneX + 76, phoneY - 10),
+      new Phaser.Geom.Point(phoneX + 98, phoneY - 4),
+      new Phaser.Geom.Point(phoneX + 82, phoneY + 14),
+    ], true);
+
+    this.rotateOverlayTitle.setPosition(cardX, cardTop + 54);
+    this.rotateOverlayBody.setPosition(cardX, cardTop + 232).setWordWrapWidth(cardWidth - 48);
+    this.rotateOverlayHint.setPosition(cardX, cardTop + 280).setWordWrapWidth(cardWidth - 56);
+    this.rotateOverlaySparkA.setPosition(cardX - cardWidth / 2 + 34, cardTop + 42);
+    this.rotateOverlaySparkB.setPosition(cardX + cardWidth / 2 - 36, cardTop + 268);
+  }
+
+  updatePhonePortraitLock(isLocked, layout) {
+    this.phonePortraitLocked = isLocked;
+
+    if (isLocked) {
+      this.clearHudPanels();
+      this.setGameplayUiVisible(false);
+      this.layoutRotateOverlay(layout);
+      this.rotateOverlay.setVisible(true);
+      this.setHoveredTarget(null);
+      return;
+    }
+
+    this.rotateOverlay.setVisible(false);
+    this.setGameplayUiVisible(true);
+    this.hudLeftPanel.setVisible(true);
+    this.hudCenterPanel.setVisible(true);
+    this.hudRightPanel.setVisible(true);
+  }
+
+  getTargetLayoutKey(total) {
+    const layout = this.layoutProfile ?? this.getResponsiveLayout();
+    return `${layout.mode}-${Math.round(layout.gameplayBand.left)}-${Math.round(layout.gameplayBand.right)}-${Math.round(layout.gameplayBand.top)}-${Math.round(layout.gameplayBand.bottom)}-${total}`;
+  }
+
+  relayoutActiveTargets(force = false) {
+    if (!this.currentChallenge || !this.activeTargets.length || this.resolvingWave) {
+      return;
+    }
+
+    const nextKey = this.getTargetLayoutKey(this.activeTargets.length);
+    if (!force && nextKey === this.targetLayoutKey) {
+      return;
+    }
+
+    const options = this.activeTargets.map((target) => target.option);
+    this.setHoveredTarget(null);
+    this.activeTargets.forEach((target) => target.container.destroy(true));
+    this.activeTargets = [];
+    this.currentTargetSlots = this.buildTargetSlots(options.length);
+    options.forEach((option, index) => this.spawnTarget(option, index, options.length));
+    this.targetLayoutKey = nextKey;
+  }
+
   layout() {
     const { width, height } = this.scale;
     const layout = this.getResponsiveLayout();
     const { metrics, safe } = layout;
     this.layoutProfile = layout;
 
+    const portraitLock = layout.mode === 'phone-portrait';
+    this.updatePhonePortraitLock(portraitLock, layout);
+    if (portraitLock) {
+      this.debugPanel.toggle(false);
+      this.settingsPanel?.relayout();
+      return;
+    }
+
+    this.debugPanel.toggle(this.save.state.settings.debugPanel && !metrics.isPhone);
     this.drawHudPanels(layout);
 
     if (layout.mode === 'phone-portrait') {
@@ -404,36 +635,38 @@ export class LevelScene extends Phaser.Scene {
         heart.setPosition(safe.left + 30 + index * 24, safe.top + 52).setScale(0.74);
       });
     } else if (layout.mode === 'phone-landscape') {
-      this.island.setPosition(width * 0.1, height * 0.84).setScale(0.54);
-      this.palm.setPosition(width * 0.06, height * 0.47).setScale(0.44);
-      this.coveGlow.setPosition(width * 0.16, height * 0.72);
-      this.cannonGlow.setPosition(width * 0.18, height * 0.76);
-      this.cannonShadow.setPosition(width * 0.18, height * 0.88).setScale(0.76, 0.76);
-      this.cannon.setPosition(width * 0.18, height * 0.8).setScale(0.66);
+      const gameplayTop = layout.gameplayBand.top;
+      const gameplayBottom = layout.gameplayBand.bottom;
+      this.island.setPosition(width * 0.1, gameplayBottom - 22).setScale(0.5);
+      this.palm.setPosition(safe.left + 26, gameplayTop + 36).setScale(0.36);
+      this.coveGlow.setPosition(width * 0.17, gameplayBottom - 38).setScale(0.92, 0.92);
+      this.cannonGlow.setPosition(width * 0.17, gameplayBottom - 30);
+      this.cannonShadow.setPosition(width * 0.17, gameplayBottom + 30).setScale(0.62, 0.62);
+      this.cannon.setPosition(width * 0.17, gameplayBottom - 26).setScale(0.58);
 
-      this.levelText.setStyle({ fontSize: '16px', strokeThickness: 5 });
+      this.levelText.setStyle({ fontSize: '15px', strokeThickness: 5 });
       this.scoreText.setStyle({ fontSize: '18px', strokeThickness: 5 });
       this.waveText.setStyle({ fontSize: '16px', strokeThickness: 5 });
-      this.comboText.setStyle({ fontSize: '14px', strokeThickness: 4 });
+      this.comboText.setStyle({ fontSize: '13px', strokeThickness: 4 });
 
-      this.levelText.setPosition(safe.left + 14, safe.top + 8);
-      this.scoreText.setPosition(width * 0.46 - this.scoreText.width / 2, safe.top + 8);
-      this.waveText.setPosition(width * 0.46 - this.waveText.width / 2, safe.top + 30);
-      this.comboText.setPosition(width * 0.46 - this.comboText.width / 2, layout.prompt.y + layout.prompt.height / 2 + 8);
+      this.levelText.setPosition(safe.left + 12, safe.top + 7);
+      this.scoreText.setPosition(width * 0.5 - this.scoreText.width / 2, safe.top + 6);
+      this.waveText.setPosition(width * 0.5 - this.waveText.width / 2, safe.top + 25);
+      this.comboText.setPosition(width * 0.5 - this.comboText.width / 2, layout.prompt.y + layout.prompt.height / 2 + 18);
 
-      const buttonY = safe.top + 22;
+      const buttonY = safe.top + 20;
       this.mapButton.setLabel(this.mode === 'quick' ? 'Menu' : 'Map');
       this.settingsButton.setLabel('Gear');
       this.restartButton.setLabel('Again');
-      this.mapButton.setButtonLayout({ width: 64, height: 40, fontSize: 15 });
-      this.settingsButton.setButtonLayout({ width: 72, height: 40, fontSize: 15 });
-      this.restartButton.setButtonLayout({ width: 78, height: 40, fontSize: 15 });
+      this.mapButton.setButtonLayout({ width: 60, height: 38, fontSize: 14 });
+      this.settingsButton.setButtonLayout({ width: 68, height: 38, fontSize: 14 });
+      this.restartButton.setButtonLayout({ width: 74, height: 38, fontSize: 14 });
       this.restartButton.setPosition(width - metrics.scenePadding.right - this.restartButton.widthValue / 2, buttonY);
-      this.settingsButton.setPosition(this.restartButton.x - this.restartButton.widthValue / 2 - 10 - this.settingsButton.widthValue / 2, buttonY);
-      this.mapButton.setPosition(this.settingsButton.x - this.settingsButton.widthValue / 2 - 10 - this.mapButton.widthValue / 2, buttonY);
+      this.settingsButton.setPosition(this.restartButton.x - this.restartButton.widthValue / 2 - 8 - this.settingsButton.widthValue / 2, buttonY);
+      this.mapButton.setPosition(this.settingsButton.x - this.settingsButton.widthValue / 2 - 8 - this.mapButton.widthValue / 2, buttonY);
 
       this.hearts.forEach((heart, index) => {
-        heart.setPosition(safe.left + 26 + index * 22, safe.top + 40).setScale(0.68);
+        heart.setPosition(safe.left + 20 + index * 22, safe.top + 30).setScale(0.68);
       });
     } else {
       const tabletPortrait = layout.mode === 'tablet-portrait';
@@ -478,7 +711,9 @@ export class LevelScene extends Phaser.Scene {
       }
     }
 
-    this.debugPanel.setPosition(safe.left + 116, safe.top + 170);
+    this.relayoutActiveTargets();
+
+    this.debugPanel.setPosition(safe.left + 116, safe.top + (metrics.isPhoneLandscape ? 132 : 170));
     this.settingsPanel?.relayout();
   }
 
@@ -506,9 +741,9 @@ export class LevelScene extends Phaser.Scene {
     }
 
     if (mode === 'phone-landscape') {
-      drawPanel(this.hudLeftPanel, safe.left, safe.top, 170, 62, 0x175879);
-      drawPanel(this.hudCenterPanel, width * 0.5 - 96, safe.top - 2, 192, 56, 0x175879);
-      drawPanel(this.hudRightPanel, safe.right - 238, safe.top, 238, 52, 0x175879);
+      drawPanel(this.hudLeftPanel, safe.left, safe.top, 148, 46, 0x175879);
+      drawPanel(this.hudCenterPanel, width * 0.5 - 92, safe.top, 184, 46, 0x175879);
+      drawPanel(this.hudRightPanel, safe.right - 226, safe.top, 226, 46, 0x175879);
       return;
     }
 
@@ -601,6 +836,7 @@ export class LevelScene extends Phaser.Scene {
     this.currentChallenge = this.challengeFactory.createChallenge({ templateId, profile, tier });
     this.previousTemplateId = templateId;
     this.currentTargetSlots = this.buildTargetSlots(this.currentChallenge.options.length);
+    this.targetLayoutKey = this.getTargetLayoutKey(this.currentChallenge.options.length);
     this.waveStartedAt = this.time.now + 160;
 
     this.refreshPromptCard(false);
@@ -616,6 +852,9 @@ export class LevelScene extends Phaser.Scene {
     });
 
     this.currentChallenge.options.forEach((option, index) => this.spawnTarget(option, index, this.currentChallenge.options.length));
+    if (this.phonePortraitLocked) {
+      this.setGameplayUiVisible(false);
+    }
     this.applyWaveSupport();
     this.scheduleHint();
     this.updateHud();
@@ -709,36 +948,39 @@ export class LevelScene extends Phaser.Scene {
     }
 
     if (layout.mode === 'phone-landscape') {
-      const rightX = width * 0.88;
-      const leftX = width * 0.75;
-      const top = height * 0.62;
-      const mid = height * 0.78;
-      const bottom = height * 0.92;
+      const band = layout.gameplayBand;
+      const top = band.top + 28;
+      const bottom = band.bottom - 38;
+      const mid = (top + bottom) / 2;
+      const rightX = Math.min(band.right - 58, width * 0.86);
+      const leftX = Math.max(band.left + 170, width * 0.68);
+      const centerX = (leftX + rightX) / 2;
+
       if (total === 4) {
         return [
-          { x: leftX, y: top, sizeScale: 0.46 },
-          { x: rightX, y: top, sizeScale: 0.46 },
-          { x: leftX, y: mid, sizeScale: 0.46 },
-          { x: rightX, y: mid, sizeScale: 0.46 },
+          { x: leftX, y: top, sizeScale: 0.44 },
+          { x: rightX, y: top, sizeScale: 0.44 },
+          { x: leftX, y: bottom, sizeScale: 0.44 },
+          { x: rightX, y: bottom, sizeScale: 0.44 },
         ];
       }
 
       if (total === 3) {
         return [
-          { x: rightX, y: top, sizeScale: 0.48 },
-          { x: leftX, y: mid, sizeScale: 0.48 },
-          { x: rightX, y: bottom, sizeScale: 0.48 },
+          { x: centerX, y: top, sizeScale: 0.46 },
+          { x: leftX, y: bottom, sizeScale: 0.46 },
+          { x: rightX, y: bottom, sizeScale: 0.46 },
         ];
       }
 
       if (total === 2) {
         return [
-          { x: rightX, y: top + 8, sizeScale: 0.52 },
-          { x: rightX, y: bottom, sizeScale: 0.52 },
+          { x: rightX, y: top + 10, sizeScale: 0.5 },
+          { x: rightX, y: bottom, sizeScale: 0.5 },
         ];
       }
 
-      return [{ x: rightX, y: mid, sizeScale: 0.56 }];
+      return [{ x: centerX, y: mid, sizeScale: 0.54 }];
     }
 
     if (layout.mode === 'tablet-portrait') {
@@ -947,7 +1189,7 @@ export class LevelScene extends Phaser.Scene {
   }
 
   async handleGameplayPointerDown(pointer) {
-    if (this.finished || this.settingsPanel || this.resolvingWave) {
+    if (this.finished || this.settingsPanel || this.resolvingWave || this.phonePortraitLocked) {
       return;
     }
 
@@ -968,7 +1210,7 @@ export class LevelScene extends Phaser.Scene {
   }
 
   handleGameplayPointerMove(pointer) {
-    if (this.finished || this.settingsPanel || !this.activeTargets.length) {
+    if (this.finished || this.settingsPanel || !this.activeTargets.length || this.phonePortraitLocked) {
       return;
     }
 
@@ -1493,6 +1735,7 @@ export class LevelScene extends Phaser.Scene {
     this.activeTargets.forEach((target) => target.container.destroy(true));
     this.activeTargets = [];
     this.currentTargetSlots = [];
+    this.targetLayoutKey = '';
   }
 
   finishRun(success) {
@@ -1574,7 +1817,7 @@ export class LevelScene extends Phaser.Scene {
   }
 
   update(time, delta) {
-    if (this.finished) {
+    if (this.finished || this.phonePortraitLocked) {
       return;
     }
 
