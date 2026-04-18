@@ -324,10 +324,10 @@ export class LevelScene extends Phaser.Scene {
         }
       : mode === 'phone-landscape'
         ? {
-            x: this.scale.width * 0.5,
-            y: safe.top + 112,
-            width: Math.min(safe.width - 140, 500),
-            height: 118,
+            x: this.scale.width * 0.53,
+            y: safe.top + 104,
+            width: Math.min(safe.width - 190, 460),
+            height: 108,
           }
         : mode === 'tablet-portrait'
           ? {
@@ -365,18 +365,18 @@ export class LevelScene extends Phaser.Scene {
         ? {
             width: prompt.width,
             height: prompt.height,
-            radius: 24,
+            radius: 22,
             edgePad: 12,
-            titleAreaHeight: 46,
-            visualWidth: prompt.width - 26,
-            visualHeight: 40,
-            titleY: -22,
-            supportY: 0,
-            visualY: 28,
-            titleFontSize: 20,
+            titleAreaHeight: 42,
+            visualWidth: prompt.width - 22,
+            visualHeight: 34,
+            titleY: -18,
+            supportY: 2,
+            visualY: 24,
+            titleFontSize: 19,
             supportFontSize: 12,
-            visualMaxWidth: prompt.width - 84,
-            visualMaxHeight: 32,
+            visualMaxWidth: prompt.width - 92,
+            visualMaxHeight: 28,
             showSparkles: false,
           }
         : mode === 'tablet-portrait'
@@ -403,10 +403,10 @@ export class LevelScene extends Phaser.Scene {
 
     const gameplayBand = mode === 'phone-landscape'
       ? {
-          top: Math.max(safe.top + 208, prompt.y + prompt.height / 2 + 34),
-          bottom: safe.bottom - 12,
+          top: Math.max(safe.top + 178, prompt.y + prompt.height / 2 + 24),
+          bottom: safe.bottom - 10,
           left: safe.left + 112,
-          right: safe.right - 12,
+          right: safe.right - 10,
         }
       : mode === 'tablet-portrait'
         ? {
@@ -645,14 +645,14 @@ export class LevelScene extends Phaser.Scene {
       this.cannon.setPosition(width * 0.17, gameplayBottom - 26).setScale(0.58);
 
       this.levelText.setStyle({ fontSize: '15px', strokeThickness: 5 });
-      this.scoreText.setStyle({ fontSize: '18px', strokeThickness: 5 });
-      this.waveText.setStyle({ fontSize: '16px', strokeThickness: 5 });
+      this.scoreText.setStyle({ fontSize: '15px', strokeThickness: 5 });
+      this.waveText.setStyle({ fontSize: '13px', strokeThickness: 4 });
       this.comboText.setStyle({ fontSize: '13px', strokeThickness: 4 });
 
       this.levelText.setPosition(safe.left + 12, safe.top + 7);
-      this.scoreText.setPosition(width * 0.5 - this.scoreText.width / 2, safe.top + 6);
-      this.waveText.setPosition(width * 0.5 - this.waveText.width / 2, safe.top + 25);
-      this.comboText.setPosition(width * 0.5 - this.comboText.width / 2, layout.prompt.y + layout.prompt.height / 2 + 18);
+      this.scoreText.setPosition(safe.left + 12, safe.top + 51);
+      this.waveText.setPosition(safe.left + 12, safe.top + 69);
+      this.comboText.setPosition(width * 0.5 - this.comboText.width / 2, layout.prompt.y + layout.prompt.height / 2 + 10);
 
       const buttonY = safe.top + 20;
       this.mapButton.setLabel(this.mode === 'quick' ? 'Menu' : 'Map');
@@ -741,9 +741,9 @@ export class LevelScene extends Phaser.Scene {
     }
 
     if (mode === 'phone-landscape') {
-      drawPanel(this.hudLeftPanel, safe.left, safe.top, 148, 46, 0x175879);
-      drawPanel(this.hudCenterPanel, width * 0.5 - 92, safe.top, 184, 46, 0x175879);
-      drawPanel(this.hudRightPanel, safe.right - 226, safe.top, 226, 46, 0x175879);
+      drawPanel(this.hudLeftPanel, safe.left, safe.top, 142, 46, 0x175879);
+      drawPanel(this.hudCenterPanel, safe.left + 2, safe.top + 48, 136, 40, 0x175879);
+      drawPanel(this.hudRightPanel, safe.right - 220, safe.top, 220, 44, 0x175879);
       return;
     }
 
@@ -761,6 +761,8 @@ export class LevelScene extends Phaser.Scene {
 
   updateHud() {
     const metrics = this.layoutProfile?.metrics ?? getViewportMetrics(this);
+    const mode = this.layoutProfile?.mode;
+    const safe = this.layoutProfile?.safe;
     const title = this.mode === 'quick'
       ? metrics.isPhone ? 'Quick' : 'Quick Play'
       : metrics.isPhone || metrics.isTabletPortrait
@@ -774,9 +776,16 @@ export class LevelScene extends Phaser.Scene {
         : `Wave ${Math.max(1, Math.min(this.state.wave, this.level.waves))} / ${this.level.waves}`,
     );
     this.comboText.setText(this.state.streak >= 2 ? `Combo x${this.state.streak}` : '');
-    this.scoreText.setX(this.scale.width * 0.5 - this.scoreText.width / 2);
-    this.waveText.setX(this.scale.width * 0.5 - this.waveText.width / 2);
-    this.comboText.setX(this.scale.width * 0.5 - this.comboText.width / 2);
+
+    if (mode === 'phone-landscape' && safe) {
+      this.scoreText.setPosition(safe.left + 12, safe.top + 51);
+      this.waveText.setPosition(safe.left + 12, safe.top + 69);
+      this.comboText.setX(this.scale.width * 0.5 - this.comboText.width / 2);
+    } else {
+      this.scoreText.setX(this.scale.width * 0.5 - this.scoreText.width / 2);
+      this.waveText.setX(this.scale.width * 0.5 - this.waveText.width / 2);
+      this.comboText.setX(this.scale.width * 0.5 - this.comboText.width / 2);
+    }
 
     this.hearts.forEach((heart, index) => {
       heart.setVisible(index < (this.mode === 'quick' ? QUICK_PLAY_HEARTS : this.level.tier === 1 ? 4 : HEARTS));
