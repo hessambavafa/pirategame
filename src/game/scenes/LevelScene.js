@@ -325,9 +325,9 @@ export class LevelScene extends Phaser.Scene {
       : mode === 'phone-landscape'
         ? {
             x: this.scale.width * 0.53,
-            y: safe.top + 104,
-            width: Math.min(safe.width - 190, 460),
-            height: 108,
+            y: safe.top + 92,
+            width: Math.min(safe.width - 220, 430),
+            height: 96,
           }
         : mode === 'tablet-portrait'
           ? {
@@ -366,17 +366,17 @@ export class LevelScene extends Phaser.Scene {
             width: prompt.width,
             height: prompt.height,
             radius: 22,
-            edgePad: 12,
-            titleAreaHeight: 42,
-            visualWidth: prompt.width - 22,
-            visualHeight: 34,
-            titleY: -18,
-            supportY: 2,
-            visualY: 24,
-            titleFontSize: 19,
+            edgePad: 10,
+            titleAreaHeight: 38,
+            visualWidth: prompt.width - 20,
+            visualHeight: 28,
+            titleY: -15,
+            supportY: 1,
+            visualY: 20,
+            titleFontSize: 18,
             supportFontSize: 12,
-            visualMaxWidth: prompt.width - 92,
-            visualMaxHeight: 28,
+            visualMaxWidth: prompt.width - 88,
+            visualMaxHeight: 24,
             showSparkles: false,
           }
         : mode === 'tablet-portrait'
@@ -403,7 +403,7 @@ export class LevelScene extends Phaser.Scene {
 
     const gameplayBand = mode === 'phone-landscape'
       ? {
-          top: Math.max(safe.top + 178, prompt.y + prompt.height / 2 + 24),
+          top: Math.max(safe.top + 160, prompt.y + prompt.height / 2 + 16),
           bottom: safe.bottom - 10,
           left: safe.left + 112,
           right: safe.right - 10,
@@ -958,38 +958,39 @@ export class LevelScene extends Phaser.Scene {
 
     if (layout.mode === 'phone-landscape') {
       const band = layout.gameplayBand;
-      const top = band.top + 28;
-      const bottom = band.bottom - 38;
-      const mid = (top + bottom) / 2;
-      const rightX = Math.min(band.right - 58, width * 0.86);
-      const leftX = Math.max(band.left + 170, width * 0.68);
-      const centerX = (leftX + rightX) / 2;
+      const bandWidth = band.right - band.left;
+      const topRowY = band.top + 32;
+      const midRowY = band.top + Math.min(88, (band.bottom - band.top) * 0.46);
+      const bottomRowY = band.bottom - 34;
+      const leftColumnX = Phaser.Math.Clamp(band.left + bandWidth * 0.37, band.left + 150, band.right - 250);
+      const centerColumnX = Phaser.Math.Clamp(band.left + bandWidth * 0.56, band.left + 215, band.right - 170);
+      const rightColumnX = Phaser.Math.Clamp(band.left + bandWidth * 0.8, band.left + 300, band.right - 72);
 
       if (total === 4) {
         return [
-          { x: leftX, y: top, sizeScale: 0.44 },
-          { x: rightX, y: top, sizeScale: 0.44 },
-          { x: leftX, y: bottom, sizeScale: 0.44 },
-          { x: rightX, y: bottom, sizeScale: 0.44 },
+          { x: leftColumnX, y: topRowY, sizeScale: 0.4 },
+          { x: rightColumnX, y: topRowY, sizeScale: 0.4 },
+          { x: leftColumnX, y: bottomRowY, sizeScale: 0.4 },
+          { x: rightColumnX, y: bottomRowY, sizeScale: 0.4 },
         ];
       }
 
       if (total === 3) {
         return [
-          { x: centerX, y: top, sizeScale: 0.46 },
-          { x: leftX, y: bottom, sizeScale: 0.46 },
-          { x: rightX, y: bottom, sizeScale: 0.46 },
+          { x: centerColumnX, y: topRowY, sizeScale: 0.42 },
+          { x: leftColumnX, y: bottomRowY, sizeScale: 0.42 },
+          { x: rightColumnX, y: bottomRowY, sizeScale: 0.42 },
         ];
       }
 
       if (total === 2) {
         return [
-          { x: rightX, y: top + 10, sizeScale: 0.5 },
-          { x: rightX, y: bottom, sizeScale: 0.5 },
+          { x: centerColumnX + 28, y: midRowY - 12, sizeScale: 0.46 },
+          { x: rightColumnX, y: bottomRowY, sizeScale: 0.46 },
         ];
       }
 
-      return [{ x: centerX, y: mid, sizeScale: 0.54 }];
+      return [{ x: centerColumnX, y: midRowY, sizeScale: 0.5 }];
     }
 
     if (layout.mode === 'tablet-portrait') {
