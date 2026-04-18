@@ -14,49 +14,76 @@ Pirate Cannon Cove is a Phaser 3 browser game built with Vite. It aims to feel l
    `npm run preview -- --host 127.0.0.1`
 
 Production output:
-- `npm run build` now writes the static site to `docs/` so it can be deployed directly with GitHub Pages
+- `npm run build` writes the static production site to `dist/`
 - `npm run preview` serves that production build locally
 
 Notes:
 - This project uses Phaser 3 and Vite exactly as requested.
 - The `package.json` uses a Vite-compatible `esbuild-wasm` override so the project can run in environments where the native `esbuild` binary is blocked by Windows policy. It is still a Vite project and the normal `npm run dev` / `npm run build` workflow works.
-- The Vite base path is set to `./` in `vite.config.js` so the build works when served from a GitHub Pages repo subpath.
+- The Vite base path is set to `/pirategame/` in `vite.config.js` because the GitHub repo name is `pirategame`.
 
 ## GitHub Pages deployment
 
-This project is set up for simple static GitHub Pages hosting with low discoverability, not real access control.
+This project is set up for GitHub Pages deployment through GitHub Actions.
 
 ### One-time repo setup
 
 1. Push this repo to GitHub.
-2. Make sure the default branch is the branch you want to publish from, usually `main`.
-3. In GitHub, open:
+2. Make sure the repo name is exactly `pirategame`.
+3. Make sure the default branch is `main`.
+4. In GitHub, open:
    `Settings -> Pages`
-4. Under `Build and deployment`, choose:
-   - `Source`: `Deploy from a branch`
-   - `Branch`: `main`
-   - `Folder`: `/docs`
-5. Click `Save`.
+5. Under `Build and deployment`, choose:
+   - `Source`: `GitHub Actions`
+6. Save the setting if GitHub asks for confirmation.
+7. Do not use the branch/folder deployment option for this repo. The workflow publishes the built `dist/` artifact for you.
 
-That is the exact branch/folder setup this repo is prepared for.
+That is the exact Pages setup this repo is prepared for.
+
+### Workflow file included
+
+This repo now includes:
+
+- [deploy-pages.yml](</C:/Users/bavafa/Documents/New project/.github/workflows/deploy-pages.yml>)
+
+The workflow:
+- runs on pushes to `main`
+- installs dependencies with `npm ci`
+- builds the site with `npm run build`
+- uploads the `dist/` output
+- deploys it to GitHub Pages
 
 ### Publish the site
 
-1. Install dependencies:
-   `npm install`
-2. Build the production site:
-   `npm run build`
-3. Commit the generated `docs/` folder along with your source changes.
-4. Push to GitHub.
-5. Wait for GitHub Pages to publish the updated contents of `docs/`.
+1. Push this repo to GitHub.
+2. Push changes to the `main` branch.
+3. GitHub Actions will run the `Deploy GitHub Pages` workflow automatically.
+4. After the workflow finishes, GitHub Pages will publish the site.
+
+Expected Pages URL format:
+- `https://<your-github-username>.github.io/pirategame/`
 
 ### Update the site later
 
 Every time you want to publish a change:
 
-1. Run `npm run build`
-2. Commit the updated `docs/`
-3. Push to the same branch used in Pages settings
+1. Commit your source changes
+2. Push to `main`
+3. Wait for the Pages workflow to finish
+
+You do not need to commit `dist/` or `docs/` when using this workflow.
+
+### Local production verification
+
+To verify the same production build locally:
+
+1. `npm install`
+2. `npm run build`
+3. `npm run preview -- --host 127.0.0.1`
+4. Open:
+   `http://127.0.0.1:4173/pirategame/`
+
+Because the Vite base path is `/pirategame/`, the production preview should be checked on that subpath rather than just `/`.
 
 ### Low-discoverability measures included
 
@@ -187,7 +214,6 @@ Verified:
 - `npm install`
 - `npm run build`
 - `npm run preview -- --host 127.0.0.1`
-- local production preview responds on HTTP 200
 
 Manual gameplay checks to keep doing while tuning:
 - mouse and touch target comfort
