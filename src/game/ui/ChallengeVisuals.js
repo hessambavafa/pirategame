@@ -1,14 +1,26 @@
 import Phaser from 'phaser';
 
-export function createPromptCard(scene, x, y, challenge) {
+export function createPromptCard(scene, x, y, challenge, layoutOptions = {}) {
   const container = scene.add.container(x, y);
-  const width = 700;
-  const height = 236;
+  const width = layoutOptions.width ?? 700;
+  const height = layoutOptions.height ?? 236;
+  const radius = layoutOptions.radius ?? 38;
+  const edgePad = layoutOptions.edgePad ?? Math.round(width * 0.08);
+  const titleAreaHeight = layoutOptions.titleAreaHeight ?? Math.round(height * 0.38);
+  const visualHeight = layoutOptions.visualHeight ?? Math.round(height * 0.44);
+  const visualWidth = layoutOptions.visualWidth ?? (width - edgePad * 2);
+  const titleY = layoutOptions.titleY ?? (-height / 2 + edgePad + titleAreaHeight * 0.34);
+  const supportY = layoutOptions.supportY ?? (titleY + Math.min(44, titleAreaHeight * 0.4));
+  const visualY = layoutOptions.visualY ?? (height / 2 - edgePad - visualHeight / 2);
   const accent = challenge.accentColor ?? 0xffcb6f;
   const supportText = challenge.supportMode === 'strong' && challenge.promptVisual?.helperTag
     ? challenge.promptVisual.helperTag
     : challenge.subInstruction ?? '';
-  const titleFontSize = challenge.instruction.length > 28 ? 34 : 38;
+  const titleFontSize = layoutOptions.titleFontSize ?? (challenge.instruction.length > 28 ? 34 : 38);
+  const supportFontSize = layoutOptions.supportFontSize ?? 18;
+  const showSparkles = layoutOptions.showSparkles ?? true;
+  const visualMaxWidth = layoutOptions.visualMaxWidth ?? Math.max(160, visualWidth - 44);
+  const visualMaxHeight = layoutOptions.visualMaxHeight ?? Math.max(42, visualHeight - 28);
 
   const shadow = scene.add.graphics();
   const panel = scene.add.graphics();
@@ -16,42 +28,42 @@ export function createPromptCard(scene, x, y, challenge) {
   const accentBar = scene.add.graphics();
   const divider = scene.add.graphics();
   const visualWell = scene.add.graphics();
-  const sparkleLeft = scene.add.image(-300, -82, 'spark').setScale(0.34).setAlpha(0.56);
-  const sparkleRight = scene.add.image(300, -82, 'spark').setScale(0.42).setAlpha(0.72);
+  const sparkleLeft = scene.add.image(-width / 2 + edgePad * 0.8, -height / 2 + edgePad * 0.78, 'spark').setScale(Math.max(0.22, width / 2060)).setAlpha(showSparkles ? 0.56 : 0);
+  const sparkleRight = scene.add.image(width / 2 - edgePad * 0.8, -height / 2 + edgePad * 0.78, 'spark').setScale(Math.max(0.28, width / 1660)).setAlpha(showSparkles ? 0.72 : 0);
 
   shadow.fillStyle(0x0b425f, 0.18);
-  shadow.fillRoundedRect(-width / 2, -height / 2 + 10, width, height, 38);
+  shadow.fillRoundedRect(-width / 2, -height / 2 + Math.max(8, height * 0.04), width, height, radius);
 
   panel.fillStyle(0xfff8e7, 0.98);
   panel.lineStyle(8, 0xffc86d, 1);
-  panel.fillRoundedRect(-width / 2, -height / 2, width, height, 38);
-  panel.strokeRoundedRect(-width / 2, -height / 2, width, height, 38);
+  panel.fillRoundedRect(-width / 2, -height / 2, width, height, radius);
+  panel.strokeRoundedRect(-width / 2, -height / 2, width, height, radius);
 
   headerBand.fillStyle(0xffffff, 0.72);
-  headerBand.fillRoundedRect(-306, -96, 612, 90, 28);
+  headerBand.fillRoundedRect(-width / 2 + edgePad, -height / 2 + edgePad * 0.7, width - edgePad * 2, titleAreaHeight, Math.max(18, radius - 10));
   headerBand.fillStyle(accent, 0.16);
-  headerBand.fillRoundedRect(-306, -96, 612, 90, 28);
+  headerBand.fillRoundedRect(-width / 2 + edgePad, -height / 2 + edgePad * 0.7, width - edgePad * 2, titleAreaHeight, Math.max(18, radius - 10));
   headerBand.fillStyle(0xffffff, 0.2);
-  headerBand.fillRoundedRect(-144, -96, 288, 26, 14);
+  headerBand.fillRoundedRect(-Math.min(144, width * 0.23), -height / 2 + edgePad * 0.7, Math.min(288, width * 0.46), Math.max(18, titleAreaHeight * 0.3), 14);
 
   accentBar.fillStyle(accent, 0.94);
-  accentBar.fillRoundedRect(-300, -98, 102, 10, 5);
-  accentBar.fillRoundedRect(198, -98, 102, 10, 5);
+  accentBar.fillRoundedRect(-width / 2 + edgePad + 2, -height / 2 + edgePad * 0.56, Math.max(56, width * 0.15), Math.max(8, height * 0.04), 5);
+  accentBar.fillRoundedRect(width / 2 - edgePad - Math.max(56, width * 0.15) - 2, -height / 2 + edgePad * 0.56, Math.max(56, width * 0.15), Math.max(8, height * 0.04), 5);
 
   divider.lineStyle(3, 0xffffff, 0.92);
   divider.beginPath();
-  divider.moveTo(-274, -2);
-  divider.lineTo(274, -2);
+  divider.moveTo(-visualWidth / 2 + 18, visualY - visualHeight / 2 - 12);
+  divider.lineTo(visualWidth / 2 - 18, visualY - visualHeight / 2 - 12);
   divider.strokePath();
 
   visualWell.fillStyle(0xffffff, 0.96);
   visualWell.lineStyle(4, 0xd7edf7, 1);
-  visualWell.fillRoundedRect(-292, 12, 584, 100, 28);
-  visualWell.strokeRoundedRect(-292, 12, 584, 100, 28);
+  visualWell.fillRoundedRect(-visualWidth / 2, visualY - visualHeight / 2, visualWidth, visualHeight, Math.max(18, radius - 10));
+  visualWell.strokeRoundedRect(-visualWidth / 2, visualY - visualHeight / 2, visualWidth, visualHeight, Math.max(18, radius - 10));
   visualWell.fillStyle(accent, 0.07);
-  visualWell.fillRoundedRect(-280, 24, 560, 76, 22);
+  visualWell.fillRoundedRect(-visualWidth / 2 + 12, visualY - visualHeight / 2 + 12, visualWidth - 24, visualHeight - 24, Math.max(14, radius - 16));
 
-  const titleText = scene.add.text(0, -60, challenge.instruction, {
+  const titleText = scene.add.text(0, titleY, challenge.instruction, {
     fontFamily: 'Fredoka',
     fontSize: `${titleFontSize}px`,
     fontStyle: '700',
@@ -59,18 +71,25 @@ export function createPromptCard(scene, x, y, challenge) {
     stroke: '#ffffff',
     strokeThickness: 10,
     align: 'center',
-    wordWrap: { width: 548 },
+    wordWrap: { width: width - edgePad * 2 - 42 },
   }).setOrigin(0.5);
 
-  const supportLine = scene.add.text(0, -22, supportText, {
+  const supportLine = scene.add.text(0, supportY, supportText, {
     fontFamily: 'Fredoka',
-    fontSize: '18px',
+    fontSize: `${supportFontSize}px`,
     fontStyle: '600',
     color: '#58758a',
     align: 'center',
-    wordWrap: { width: 560 },
+    wordWrap: { width: width - edgePad * 2 - 28 },
   }).setOrigin(0.5);
   supportLine.setVisible(Boolean(supportText));
+
+  const dividerY = visualY - visualHeight / 2 - 12;
+  const desiredSupportY = Math.min(titleText.y + titleText.height / 2 + 6, dividerY - 16);
+  supportLine.setY(desiredSupportY);
+  if (desiredSupportY <= titleText.y + titleText.height / 2 + 2 || dividerY - desiredSupportY < 12) {
+    supportLine.setVisible(false);
+  }
 
   container.add([
     shadow,
@@ -85,23 +104,25 @@ export function createPromptCard(scene, x, y, challenge) {
     supportLine,
   ]);
 
-  const visualHolder = scene.add.container(0, 58);
+  const visualHolder = scene.add.container(0, visualY);
   container.add(visualHolder);
   const visual = renderVisualDescriptor(scene, visualHolder, 0, 0, challenge.promptVisual, {
     mode: 'prompt',
     showPads: true,
     accentColor: accent,
   });
-  fitVisualToBox(visual, 540, 76);
+  fitVisualToBox(visual, visualMaxWidth, visualMaxHeight);
 
-  scene.tweens.add({
-    targets: [sparkleLeft, sparkleRight],
-    alpha: { from: 0.36, to: 0.84 },
-    scale: { from: 0.26, to: 0.48 },
-    duration: 1200,
-    yoyo: true,
-    repeat: -1,
-  });
+  if (showSparkles) {
+    scene.tweens.add({
+      targets: [sparkleLeft, sparkleRight],
+      alpha: { from: 0.36, to: 0.84 },
+      scale: { from: Math.max(0.18, sparkleLeft.scaleX * 0.76), to: sparkleRight.scaleX * 1.14 },
+      duration: 1200,
+      yoyo: true,
+      repeat: -1,
+    });
+  }
 
   return container;
 }

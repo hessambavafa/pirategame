@@ -7,6 +7,7 @@ export class BigButton extends Phaser.GameObjects.Container {
     this.scene = scene;
     this.widthValue = config.width ?? 280;
     this.heightValue = config.height ?? 84;
+    this.fontSizeValue = config.fontSize ?? 34;
     this.onPress = config.onPress ?? (() => {});
     this.fill = config.fill ?? 0xffd45f;
     this.stroke = config.stroke ?? 0xff8d38;
@@ -18,7 +19,7 @@ export class BigButton extends Phaser.GameObjects.Container {
     this.gloss = scene.add.graphics();
     this.label = scene.add.text(0, -2, config.label ?? 'Play', {
       fontFamily: 'Fredoka',
-      fontSize: `${config.fontSize ?? 34}px`,
+      fontSize: `${this.fontSizeValue}px`,
       fontStyle: '700',
       color: this.textColor,
       stroke: '#ffffff',
@@ -72,10 +73,26 @@ export class BigButton extends Phaser.GameObjects.Container {
     scene.add.existing(this);
   }
 
+  syncHitArea() {
+    this.setSize(this.widthValue, this.heightValue);
+    this.disableInteractive();
+
+    if (this.enabled) {
+      this.setInteractive(
+        new Phaser.Geom.Rectangle(-this.widthValue / 2, -this.heightValue / 2, this.widthValue, this.heightValue),
+        Phaser.Geom.Rectangle.Contains,
+      );
+    }
+  }
+
   refresh() {
     this.shadow.clear();
     this.background.clear();
     this.gloss.clear();
+    this.label.setStyle({
+      fontSize: `${this.fontSizeValue}px`,
+      strokeThickness: this.fontSizeValue >= 28 ? 8 : this.fontSizeValue >= 20 ? 6 : 5,
+    });
 
     this.shadow.fillStyle(0x21476d, 0.18);
     this.shadow.fillRoundedRect(-this.widthValue / 2, -this.heightValue / 2 + 10, this.widthValue, this.heightValue, 28);
@@ -93,16 +110,26 @@ export class BigButton extends Phaser.GameObjects.Container {
     this.label.setText(text);
   }
 
+  setButtonLayout({ width, height, fontSize }) {
+    if (typeof width === 'number') {
+      this.widthValue = width;
+    }
+
+    if (typeof height === 'number') {
+      this.heightValue = height;
+    }
+
+    if (typeof fontSize === 'number') {
+      this.fontSizeValue = fontSize;
+    }
+
+    this.syncHitArea();
+    this.refresh();
+  }
+
   setEnabled(enabled) {
     this.enabled = enabled;
+    this.syncHitArea();
     this.refresh();
-    this.disableInteractive();
-
-    if (enabled) {
-      this.setInteractive(
-        new Phaser.Geom.Rectangle(-this.widthValue / 2, -this.heightValue / 2, this.widthValue, this.heightValue),
-        Phaser.Geom.Rectangle.Contains,
-      );
-    }
   }
 }

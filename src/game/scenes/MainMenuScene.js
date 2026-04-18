@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { SCENES } from '../constants.js';
 import { createBackdrop } from '../effects/BackdropFactory.js';
+import { getSafeBounds, getViewportMetrics } from '../helpers/layout.js';
 import { SettingsPanel } from '../ui/SettingsPanel.js';
 import { BigButton } from '../ui/Button.js';
 
@@ -148,83 +149,144 @@ export class MainMenuScene extends Phaser.Scene {
 
   layout() {
     const { width, height } = this.scale;
-    const compact = width < 520;
+    const metrics = getViewportMetrics(this);
+    const safe = getSafeBounds(this, metrics.scenePadding);
+    const compact = metrics.isPhonePortrait;
+    const phoneLandscape = metrics.isPhoneLandscape;
+    const tabletPortrait = metrics.isTabletPortrait;
 
     this.kicker.setStyle({
-      fontSize: compact ? '16px' : '20px',
-      strokeThickness: compact ? 6 : 8,
+      fontSize: compact ? '16px' : phoneLandscape ? '14px' : '20px',
+      strokeThickness: compact || phoneLandscape ? 6 : 8,
     });
     this.titleTop.setStyle({
-      fontSize: compact ? '44px' : '66px',
-      strokeThickness: compact ? 10 : 12,
+      fontSize: compact ? '44px' : phoneLandscape ? '34px' : tabletPortrait ? '58px' : '66px',
+      strokeThickness: compact ? 10 : phoneLandscape ? 8 : 12,
     });
     this.titleBottom.setStyle({
-      fontSize: compact ? '64px' : '96px',
-      strokeThickness: compact ? 11 : 14,
+      fontSize: compact ? '64px' : phoneLandscape ? '48px' : tabletPortrait ? '82px' : '96px',
+      strokeThickness: compact ? 11 : phoneLandscape ? 9 : 14,
     });
     this.subtitle.setStyle({
-      fontSize: compact ? '15px' : '24px',
-      strokeThickness: compact ? 6 : 8,
-      wordWrap: { width: compact ? 320 : 760 },
+      fontSize: compact ? '15px' : phoneLandscape ? '14px' : '24px',
+      strokeThickness: compact || phoneLandscape ? 5 : 8,
+      wordWrap: { width: compact ? safe.width - 24 : phoneLandscape ? width * 0.38 : 760 },
     });
     this.statusText.setStyle({
-      fontSize: compact ? '17px' : '22px',
-      strokeThickness: compact ? 5 : 6,
+      fontSize: compact ? '17px' : phoneLandscape ? '14px' : '22px',
+      strokeThickness: compact || phoneLandscape ? 5 : 6,
     });
     this.bestText.setStyle({
-      fontSize: compact ? '17px' : '22px',
-      strokeThickness: compact ? 5 : 6,
+      fontSize: compact ? '17px' : phoneLandscape ? '14px' : '22px',
+      strokeThickness: compact || phoneLandscape ? 5 : 6,
     });
 
-    if (compact) {
+    if (compact || phoneLandscape) {
       const wallet = this.game.services.save.state.wallet;
       const cleared = Object.keys(this.game.services.save.state.story.completedLevels).length;
-      this.statusText.setText(`Treasure ${wallet.gold} gold\n${wallet.gems} gems`);
-      this.bestText.setText(`Best quick ${this.game.services.save.state.quickPlay.bestScore}\nStory ${cleared}/18`);
-      this.storyButton.setScale(0.82);
-      this.quickButton.setScale(0.82);
-      this.settingsButton.setScale(0.9);
+      this.statusText.setText(phoneLandscape ? `Treasure ${wallet.gold} gold  |  ${wallet.gems} gems` : `Treasure ${wallet.gold} gold\n${wallet.gems} gems`);
+      this.bestText.setText(phoneLandscape ? `Best quick ${this.game.services.save.state.quickPlay.bestScore}  |  Story ${cleared}/18` : `Best quick ${this.game.services.save.state.quickPlay.bestScore}\nStory ${cleared}/18`);
     } else {
-      this.storyButton.setScale(1);
-      this.quickButton.setScale(1);
-      this.settingsButton.setScale(1);
       this.refreshStats();
     }
 
+    this.storyButton.setButtonLayout({
+      width: compact ? safe.width - 42 : phoneLandscape ? 220 : 320,
+      height: compact ? 82 : phoneLandscape ? 72 : 92,
+      fontSize: compact ? 30 : phoneLandscape ? 26 : 34,
+    });
+    this.quickButton.setButtonLayout({
+      width: compact ? safe.width - 42 : phoneLandscape ? 220 : 320,
+      height: compact ? 82 : phoneLandscape ? 72 : 92,
+      fontSize: compact ? 30 : phoneLandscape ? 26 : 34,
+    });
+    this.settingsButton.setButtonLayout({
+      width: compact ? Math.min(240, safe.width - 88) : phoneLandscape ? 190 : 188,
+      height: compact ? 60 : phoneLandscape ? 54 : 62,
+      fontSize: compact ? 22 : phoneLandscape ? 20 : 24,
+    });
+
     this.headerPlate.clear();
-    this.headerPlate.fillStyle(0x135274, 0.34);
-    this.headerPlate.fillRoundedRect(width / 2 - (compact ? 170 : 330), height * (compact ? 0.075 : 0.1), compact ? 340 : 660, compact ? 152 : 208, compact ? 34 : 46);
-    this.headerPlate.fillStyle(0xffffff, 0.12);
-    this.headerPlate.fillRoundedRect(width / 2 - (compact ? 144 : 284), height * (compact ? 0.088 : 0.12), compact ? 288 : 568, compact ? 26 : 40, compact ? 14 : 20);
-    this.headerPlate.fillStyle(0xffd678, 0.9);
-    this.headerPlate.fillRoundedRect(width / 2 - (compact ? 146 : 290), height * (compact ? 0.081 : 0.108), compact ? 74 : 116, 10, 5);
-    this.headerPlate.fillRoundedRect(width / 2 + (compact ? 72 : 174), height * (compact ? 0.081 : 0.108), compact ? 74 : 116, 10, 5);
-
     this.subtitlePlate.clear();
-    this.subtitlePlate.fillStyle(0x135274, 0.24);
-    this.subtitlePlate.fillRoundedRect(width / 2 - (compact ? 170 : 350), height * (compact ? 0.3 : 0.33), compact ? 340 : 700, compact ? 62 : 70, compact ? 22 : 28);
-    this.subtitlePlate.fillStyle(0xffffff, 0.08);
-    this.subtitlePlate.fillRoundedRect(width / 2 - (compact ? 156 : 332), height * (compact ? 0.314 : 0.345), compact ? 312 : 664, compact ? 18 : 24, 12);
-
     this.statsPlate.clear();
-    this.statsPlate.fillStyle(0x135274, 0.36);
-    this.statsPlate.fillRoundedRect(width / 2 - (compact ? 164 : 300), height * (compact ? 0.865 : 0.84), compact ? 328 : 600, compact ? 116 : 98, compact ? 26 : 30);
 
-    this.heroShip.setPosition(width * (compact ? 0.18 : 0.17), height * (compact ? 0.355 : 0.34)).setScale(compact ? 0.9 : 1.18);
-    this.heroCannon.setPosition(width * (compact ? 0.82 : 0.83), height * (compact ? 0.37 : 0.37)).setScale(compact ? 0.78 : 1.04);
-    this.heroSpark.setPosition(width * (compact ? 0.74 : 0.77), height * (compact ? 0.24 : 0.25)).setScale(compact ? 0.56 : 0.76);
-    this.headerSparkLeft.setPosition(width / 2 - (compact ? 128 : 260), height * (compact ? 0.145 : 0.18));
-    this.headerSparkRight.setPosition(width / 2 + (compact ? 126 : 254), height * (compact ? 0.2 : 0.24));
+    if (phoneLandscape) {
+      const leftWidth = width * 0.48;
+      const headerWidth = Math.min(leftWidth - 12, 352);
+      const headerHeight = 140;
+      const headerX = safe.left + headerWidth / 2 + 10;
+      const headerY = safe.top + 18;
+      const buttonX = width * 0.76;
 
-    this.kicker.setPosition(width / 2, height * (compact ? 0.13 : 0.153));
-    this.titleTop.setPosition(width / 2, height * (compact ? 0.18 : 0.205));
-    this.titleBottom.setPosition(width / 2, height * (compact ? 0.245 : 0.28));
-    this.subtitle.setPosition(width / 2, height * (compact ? 0.33 : 0.38));
-    this.storyButton.setPosition(width / 2, height * (compact ? 0.53 : 0.54));
-    this.quickButton.setPosition(width / 2, height * (compact ? 0.665 : 0.685));
-    this.settingsButton.setPosition(width / 2, height * (compact ? 0.79 : 0.81));
-    this.statusText.setPosition(width / 2, height * (compact ? 0.9 : 0.885));
-    this.bestText.setPosition(width / 2, height * (compact ? 0.952 : 0.93));
+      this.headerPlate.fillStyle(0x135274, 0.34);
+      this.headerPlate.fillRoundedRect(headerX - headerWidth / 2, headerY, headerWidth, headerHeight, 34);
+      this.headerPlate.fillStyle(0xffffff, 0.12);
+      this.headerPlate.fillRoundedRect(headerX - headerWidth / 2 + 22, headerY + 18, headerWidth - 44, 24, 12);
+
+      this.subtitlePlate.fillStyle(0x135274, 0.24);
+      this.subtitlePlate.fillRoundedRect(headerX - headerWidth / 2, headerY + headerHeight + 8, headerWidth, 58, 22);
+
+      this.statsPlate.fillStyle(0x135274, 0.36);
+      this.statsPlate.fillRoundedRect(safe.left, height - metrics.scenePadding.bottom - 58, safe.width, 54, 24);
+
+      this.heroShip.setPosition(safe.left + 74, height - 118).setScale(0.7);
+      this.heroCannon.setPosition(headerX + 132, headerY + headerHeight + 30).setScale(0.58);
+      this.heroSpark.setPosition(buttonX - 26, safe.top + 34).setScale(0.42);
+      this.headerSparkLeft.setPosition(headerX - 126, headerY + 38);
+      this.headerSparkRight.setPosition(headerX + 128, headerY + 78);
+
+      this.kicker.setPosition(headerX, headerY + 30);
+      this.titleTop.setPosition(headerX, headerY + 62);
+      this.titleBottom.setPosition(headerX, headerY + 102);
+      this.subtitle.setPosition(headerX, headerY + headerHeight + 36);
+
+      this.storyButton.setPosition(buttonX, safe.top + 72);
+      this.quickButton.setPosition(buttonX, safe.top + 154);
+      this.settingsButton.setPosition(buttonX, safe.top + 222);
+      this.statusText.setPosition(width / 2, height - 46);
+      this.bestText.setPosition(width / 2, height - 24);
+    } else {
+      const headerWidth = compact ? safe.width : Math.min(660, safe.width - 24);
+      const headerHeight = compact ? 152 : tabletPortrait ? 196 : 208;
+      const headerTop = safe.top + (compact ? 14 : 18);
+      const centerX = width / 2;
+      const subtitleWidth = compact ? safe.width : Math.min(700, safe.width - 10);
+      const statsWidth = compact ? safe.width : Math.min(600, safe.width - 40);
+      const statsHeight = compact ? 114 : 98;
+
+      this.headerPlate.fillStyle(0x135274, 0.34);
+      this.headerPlate.fillRoundedRect(centerX - headerWidth / 2, headerTop, headerWidth, headerHeight, compact ? 34 : 46);
+      this.headerPlate.fillStyle(0xffffff, 0.12);
+      this.headerPlate.fillRoundedRect(centerX - headerWidth / 2 + 26, headerTop + 18, headerWidth - 52, compact ? 24 : 40, compact ? 12 : 20);
+      this.headerPlate.fillStyle(0xffd678, 0.9);
+      this.headerPlate.fillRoundedRect(centerX - headerWidth / 2 + 24, headerTop + 8, compact ? 74 : 116, 10, 5);
+      this.headerPlate.fillRoundedRect(centerX + headerWidth / 2 - (compact ? 98 : 140), headerTop + 8, compact ? 74 : 116, 10, 5);
+
+      this.subtitlePlate.fillStyle(0x135274, 0.24);
+      this.subtitlePlate.fillRoundedRect(centerX - subtitleWidth / 2, compact ? height * 0.3 : height * (tabletPortrait ? 0.31 : 0.33), subtitleWidth, compact ? 62 : 70, compact ? 22 : 28);
+      this.subtitlePlate.fillStyle(0xffffff, 0.08);
+      this.subtitlePlate.fillRoundedRect(centerX - subtitleWidth / 2 + 14, compact ? height * 0.314 : height * (tabletPortrait ? 0.326 : 0.345), subtitleWidth - 28, compact ? 18 : 24, 12);
+
+      this.statsPlate.fillStyle(0x135274, 0.36);
+      this.statsPlate.fillRoundedRect(centerX - statsWidth / 2, height - statsHeight - metrics.scenePadding.bottom - 10, statsWidth, statsHeight, compact ? 26 : 30);
+
+      this.heroShip.setPosition(width * (compact ? 0.18 : 0.17), height * (compact ? 0.355 : tabletPortrait ? 0.325 : 0.34)).setScale(compact ? 0.88 : tabletPortrait ? 1.06 : 1.18);
+      this.heroCannon.setPosition(width * (compact ? 0.82 : 0.83), height * (compact ? 0.37 : 0.37)).setScale(compact ? 0.74 : tabletPortrait ? 0.94 : 1.04);
+      this.heroSpark.setPosition(width * (compact ? 0.74 : 0.77), height * (compact ? 0.24 : 0.25)).setScale(compact ? 0.56 : 0.76);
+      this.headerSparkLeft.setPosition(width / 2 - (compact ? 128 : 260), height * (compact ? 0.145 : 0.18));
+      this.headerSparkRight.setPosition(width / 2 + (compact ? 126 : 254), height * (compact ? 0.2 : 0.24));
+
+      this.kicker.setPosition(width / 2, headerTop + (compact ? 30 : 42));
+      this.titleTop.setPosition(width / 2, headerTop + (compact ? 72 : 110));
+      this.titleBottom.setPosition(width / 2, headerTop + (compact ? 116 : 164));
+      this.subtitle.setPosition(width / 2, compact ? height * 0.33 : tabletPortrait ? height * 0.365 : height * 0.38);
+      this.storyButton.setPosition(width / 2, compact ? height * 0.53 : tabletPortrait ? height * 0.515 : height * 0.54);
+      this.quickButton.setPosition(width / 2, compact ? height * 0.665 : tabletPortrait ? height * 0.645 : height * 0.685);
+      this.settingsButton.setPosition(width / 2, compact ? height * 0.79 : tabletPortrait ? height * 0.765 : height * 0.81);
+      this.statusText.setPosition(width / 2, height - (compact ? 60 : 56));
+      this.bestText.setPosition(width / 2, height - (compact ? 28 : 22));
+    }
+
     this.settingsPanel?.relayout();
   }
 }

@@ -3,6 +3,7 @@ import { DEPTHS, HEARTS, QUICK_PLAY_HEARTS, SCENES } from '../constants.js';
 import { QUICK_PLAY_CONFIG, getLevelById } from '../content/levels.js';
 import { getCatalogItem } from '../content/unlocks.js';
 import { createBackdrop } from '../effects/BackdropFactory.js';
+import { getSafeBounds, getViewportMetrics } from '../helpers/layout.js';
 import { ChallengeFactory } from '../systems/ChallengeFactory.js';
 import { DifficultyDirector } from '../systems/DifficultyDirector.js';
 import { createPromptCard, renderOptionVisual } from '../ui/ChallengeVisuals.js';
@@ -43,6 +44,7 @@ export class LevelScene extends Phaser.Scene {
     this.currentWaveRecorded = false;
     this.hoveredTarget = null;
     this.waveMistakes = 0;
+    this.promptLayoutKey = '';
 
     const startingHearts = this.mode === 'quick' ? QUICK_PLAY_HEARTS : this.level.tier === 1 ? 4 : HEARTS;
 
@@ -236,65 +238,253 @@ export class LevelScene extends Phaser.Scene {
     this.petHint.setText(pet?.label ?? 'Mr. Sussy');
   }
 
+  getResponsiveLayout() {
+    const metrics = getViewportMetrics(this);
+    const safe = getSafeBounds(this, metrics.scenePadding);
+
+    let mode = 'desktop';
+    if (metrics.isPhonePortrait) {
+      mode = 'phone-portrait';
+    } else if (metrics.isPhoneLandscape) {
+      mode = 'phone-landscape';
+    } else if (metrics.isTabletPortrait) {
+      mode = 'tablet-portrait';
+    } else if (metrics.isTabletLandscape) {
+      mode = 'tablet-landscape';
+    }
+
+    const prompt = mode === 'phone-portrait'
+      ? {
+          x: this.scale.width * 0.5,
+          y: safe.top + 206,
+          width: Math.min(safe.width - 10, 336),
+          height: 168,
+        }
+      : mode === 'phone-landscape'
+        ? {
+            x: this.scale.width * 0.49,
+            y: safe.top + 128,
+            width: Math.min(this.scale.width * 0.48, 386),
+            height: 134,
+          }
+        : mode === 'tablet-portrait'
+          ? {
+              x: this.scale.width * 0.5,
+              y: safe.top + 224,
+              width: Math.min(safe.width - 24, 620),
+              height: 204,
+            }
+          : {
+              x: this.scale.width * 0.5,
+              y: Phaser.Math.Clamp(this.scale.height * 0.235, 154, 198),
+              width: 700,
+              height: 236,
+            };
+
+    const promptLayout = mode === 'phone-portrait'
+      ? {
+          width: prompt.width,
+          height: prompt.height,
+          radius: 28,
+          edgePad: 16,
+          titleAreaHeight: 62,
+          visualWidth: prompt.width - 24,
+          visualHeight: 68,
+          titleY: -36,
+          supportY: -8,
+          visualY: 42,
+          titleFontSize: 22,
+          supportFontSize: 14,
+          visualMaxWidth: prompt.width - 74,
+          visualMaxHeight: 48,
+          showSparkles: false,
+        }
+      : mode === 'phone-landscape'
+        ? {
+            width: prompt.width,
+            height: prompt.height,
+            radius: 26,
+            edgePad: 14,
+            titleAreaHeight: 54,
+            visualWidth: prompt.width - 22,
+            visualHeight: 54,
+            titleY: -28,
+            supportY: -2,
+            visualY: 34,
+            titleFontSize: 22,
+            supportFontSize: 13,
+            visualMaxWidth: prompt.width - 82,
+            visualMaxHeight: 40,
+            showSparkles: false,
+          }
+        : mode === 'tablet-portrait'
+          ? {
+              width: prompt.width,
+              height: prompt.height,
+              radius: 34,
+              edgePad: 24,
+              titleAreaHeight: 74,
+              visualWidth: prompt.width - 28,
+              visualHeight: 84,
+              titleY: -52,
+              supportY: -18,
+              visualY: 54,
+              titleFontSize: 36,
+              supportFontSize: 18,
+              visualMaxWidth: prompt.width - 88,
+              visualMaxHeight: 62,
+            }
+          : {
+              width: prompt.width,
+              height: prompt.height,
+            };
+
+    return {
+      metrics,
+      safe,
+      mode,
+      prompt,
+      promptLayout,
+    };
+  }
+
+  refreshPromptCard(preserveAlpha = true) {
+    if (!this.currentChallenge) {
+      return;
+    }
+
+    const layout = this.layoutProfile ?? this.getResponsiveLayout();
+    const layoutKey = `${layout.mode}-${Math.round(layout.prompt.width)}-${Math.round(layout.prompt.height)}`;
+    const alpha = preserveAlpha ? (this.prompt?.alpha ?? 1) : 1;
+
+    this.prompt?.destroy(true);
+    this.prompt = createPromptCard(this, layout.prompt.x, layout.prompt.y, this.currentChallenge, layout.promptLayout).setDepth(DEPTHS.UI);
+    this.prompt.setAlpha(alpha);
+    this.promptLayoutKey = layoutKey;
+  }
+
   layout() {
     const { width, height } = this.scale;
-    const compactHud = width < 720;
+    const layout = this.getResponsiveLayout();
+    const { metrics, safe } = layout;
+    this.layoutProfile = layout;
 
-    const tinyHud = width < 520;
+    this.drawHudPanels(layout);
 
-    this.drawHudPanels(width, height, compactHud, tinyHud);
-    this.island.setPosition(width * (compactHud ? 0.14 : 0.12), height * 0.81).setScale(Math.min(1.32, width / 950));
-    this.palm.setPosition(width * 0.05, height * 0.61).setScale(Math.min(1.02, width / 1220));
-    this.coveGlow.setPosition(width * 0.19, height * 0.73);
-    this.cannonGlow.setPosition(width * 0.15, height * 0.72);
-    this.cannonShadow.setPosition(width * 0.15, height * 0.82);
-    this.cannon.setPosition(width * (compactHud ? 0.2 : 0.16), height * 0.74);
+    if (layout.mode === 'phone-portrait') {
+      this.island.setPosition(width * 0.12, height * 0.82).setScale(0.62);
+      this.palm.setPosition(width * 0.06, height * 0.6).setScale(0.48);
+      this.coveGlow.setPosition(width * 0.18, height * 0.76);
+      this.cannonGlow.setPosition(width * 0.18, height * 0.76);
+      this.cannonShadow.setPosition(width * 0.18, height * 0.87).setScale(0.78, 0.78);
+      this.cannon.setPosition(width * 0.18, height * 0.79).setScale(0.78);
 
-    this.levelText.setStyle({ fontSize: tinyHud ? '18px' : compactHud ? '22px' : '26px', strokeThickness: tinyHud ? 5 : compactHud ? 6 : 8 });
-    this.scoreText.setStyle({ fontSize: tinyHud ? '20px' : compactHud ? '22px' : '28px', strokeThickness: tinyHud ? 5 : compactHud ? 6 : 8 });
-    this.waveText.setStyle({ fontSize: tinyHud ? '17px' : compactHud ? '20px' : '24px', strokeThickness: tinyHud ? 5 : compactHud ? 6 : 8 });
-    this.comboText.setStyle({ fontSize: tinyHud ? '15px' : compactHud ? '18px' : '20px', strokeThickness: tinyHud ? 4 : compactHud ? 5 : 6 });
+      this.levelText.setStyle({ fontSize: '18px', strokeThickness: 5 });
+      this.scoreText.setStyle({ fontSize: '20px', strokeThickness: 5 });
+      this.waveText.setStyle({ fontSize: '17px', strokeThickness: 5 });
+      this.comboText.setStyle({ fontSize: '15px', strokeThickness: 4 });
 
-    this.levelText.setPosition(compactHud ? 18 : 32, tinyHud ? 14 : compactHud ? 18 : 20);
-    this.scoreText.setPosition(width * 0.5 - this.scoreText.width / 2, tinyHud ? 12 : compactHud ? 16 : 18);
-    this.waveText.setPosition(width * 0.5 - this.waveText.width / 2, tinyHud ? 34 : compactHud ? 42 : 50);
-    this.comboText.setPosition(width * 0.5 - this.comboText.width / 2, tinyHud ? 54 : compactHud ? 66 : 80);
+      this.levelText.setPosition(safe.left + 14, safe.top + 10);
+      this.scoreText.setPosition(width * 0.5 - this.scoreText.width / 2, safe.top + 56);
+      this.waveText.setPosition(width * 0.5 - this.waveText.width / 2, safe.top + 78);
+      this.comboText.setPosition(width * 0.5 - this.comboText.width / 2, layout.prompt.y + layout.prompt.height / 2 + 8);
 
-    if (compactHud) {
-      const buttonScale = tinyHud ? 0.48 : 0.56;
-      this.mapButton.setScale(buttonScale).setPosition(width - (tinyHud ? 46 : 54), tinyHud ? 28 : 34);
-      this.settingsButton.setScale(buttonScale).setPosition(width - (tinyHud ? 46 : 54), tinyHud ? 68 : 82);
-      this.restartButton.setScale(buttonScale).setPosition(width - (tinyHud ? 46 : 54), tinyHud ? 108 : 130);
+      const buttonY = safe.top + 26;
+      this.mapButton.setLabel(this.mode === 'quick' ? 'Menu' : 'Map');
+      this.settingsButton.setLabel('Gear');
+      this.restartButton.setLabel('Again');
+      this.mapButton.setButtonLayout({ width: 64, height: 42, fontSize: 16 });
+      this.settingsButton.setButtonLayout({ width: 72, height: 42, fontSize: 16 });
+      this.restartButton.setButtonLayout({ width: 76, height: 42, fontSize: 16 });
+      this.restartButton.setPosition(width - metrics.scenePadding.right - this.restartButton.widthValue / 2, buttonY);
+      this.settingsButton.setPosition(this.restartButton.x - this.restartButton.widthValue / 2 - 8 - this.settingsButton.widthValue / 2, buttonY);
+      this.mapButton.setPosition(this.settingsButton.x - this.settingsButton.widthValue / 2 - 8 - this.mapButton.widthValue / 2, buttonY);
+
       this.hearts.forEach((heart, index) => {
-        heart.setPosition((tinyHud ? 30 : 42) + index * (tinyHud ? 24 : 30), tinyHud ? 54 : 64).setScale(tinyHud ? 0.72 : 0.86);
+        heart.setPosition(safe.left + 30 + index * 24, safe.top + 52).setScale(0.74);
+      });
+    } else if (layout.mode === 'phone-landscape') {
+      this.island.setPosition(width * 0.1, height * 0.84).setScale(0.54);
+      this.palm.setPosition(width * 0.06, height * 0.47).setScale(0.44);
+      this.coveGlow.setPosition(width * 0.16, height * 0.72);
+      this.cannonGlow.setPosition(width * 0.18, height * 0.76);
+      this.cannonShadow.setPosition(width * 0.18, height * 0.88).setScale(0.76, 0.76);
+      this.cannon.setPosition(width * 0.18, height * 0.8).setScale(0.66);
+
+      this.levelText.setStyle({ fontSize: '16px', strokeThickness: 5 });
+      this.scoreText.setStyle({ fontSize: '18px', strokeThickness: 5 });
+      this.waveText.setStyle({ fontSize: '16px', strokeThickness: 5 });
+      this.comboText.setStyle({ fontSize: '14px', strokeThickness: 4 });
+
+      this.levelText.setPosition(safe.left + 14, safe.top + 8);
+      this.scoreText.setPosition(width * 0.46 - this.scoreText.width / 2, safe.top + 8);
+      this.waveText.setPosition(width * 0.46 - this.waveText.width / 2, safe.top + 30);
+      this.comboText.setPosition(width * 0.46 - this.comboText.width / 2, layout.prompt.y + layout.prompt.height / 2 + 8);
+
+      const buttonY = safe.top + 22;
+      this.mapButton.setLabel(this.mode === 'quick' ? 'Menu' : 'Map');
+      this.settingsButton.setLabel('Gear');
+      this.restartButton.setLabel('Again');
+      this.mapButton.setButtonLayout({ width: 64, height: 40, fontSize: 15 });
+      this.settingsButton.setButtonLayout({ width: 72, height: 40, fontSize: 15 });
+      this.restartButton.setButtonLayout({ width: 78, height: 40, fontSize: 15 });
+      this.restartButton.setPosition(width - metrics.scenePadding.right - this.restartButton.widthValue / 2, buttonY);
+      this.settingsButton.setPosition(this.restartButton.x - this.restartButton.widthValue / 2 - 10 - this.settingsButton.widthValue / 2, buttonY);
+      this.mapButton.setPosition(this.settingsButton.x - this.settingsButton.widthValue / 2 - 10 - this.mapButton.widthValue / 2, buttonY);
+
+      this.hearts.forEach((heart, index) => {
+        heart.setPosition(safe.left + 26 + index * 22, safe.top + 40).setScale(0.68);
       });
     } else {
-      this.mapButton.setScale(1).setPosition(width - 410, 48);
-      this.settingsButton.setScale(1).setPosition(width - 250, 48);
-      this.restartButton.setScale(1).setPosition(width - 92, 48);
+      const tabletPortrait = layout.mode === 'tablet-portrait';
+      this.island.setPosition(width * (tabletPortrait ? 0.11 : 0.12), height * 0.81).setScale(tabletPortrait ? 1.08 : Math.min(1.32, width / 950));
+      this.palm.setPosition(width * 0.05, height * (tabletPortrait ? 0.57 : 0.61)).setScale(tabletPortrait ? 0.88 : Math.min(1.02, width / 1220));
+      this.coveGlow.setPosition(width * 0.19, height * 0.73);
+      this.cannonGlow.setPosition(width * (tabletPortrait ? 0.14 : 0.15), height * (tabletPortrait ? 0.75 : 0.72));
+      this.cannonShadow.setPosition(width * (tabletPortrait ? 0.14 : 0.15), height * 0.82).setScale(1, 1);
+      this.cannon.setPosition(width * (tabletPortrait ? 0.14 : 0.16), height * (tabletPortrait ? 0.79 : 0.74)).setScale(tabletPortrait ? 0.92 : 1);
+
+      this.levelText.setStyle({ fontSize: tabletPortrait ? '22px' : '26px', strokeThickness: tabletPortrait ? 6 : 8 });
+      this.scoreText.setStyle({ fontSize: tabletPortrait ? '24px' : '28px', strokeThickness: tabletPortrait ? 7 : 8 });
+      this.waveText.setStyle({ fontSize: tabletPortrait ? '22px' : '24px', strokeThickness: tabletPortrait ? 6 : 8 });
+      this.comboText.setStyle({ fontSize: tabletPortrait ? '18px' : '20px', strokeThickness: tabletPortrait ? 5 : 6 });
+
+      this.levelText.setPosition(safe.left + 14, safe.top + 10);
+      this.scoreText.setPosition(width * 0.5 - this.scoreText.width / 2, safe.top + (tabletPortrait ? 58 : 10));
+      this.waveText.setPosition(width * 0.5 - this.waveText.width / 2, safe.top + (tabletPortrait ? 86 : 40));
+      this.comboText.setPosition(width * 0.5 - this.comboText.width / 2, safe.top + (tabletPortrait ? 114 : 68));
+
+      this.mapButton.setLabel(this.mode === 'quick' ? 'Menu' : 'Map');
+      this.settingsButton.setLabel('Settings');
+      this.restartButton.setLabel('Restart');
+      this.mapButton.setButtonLayout({ width: tabletPortrait ? 116 : 140, height: tabletPortrait ? 50 : 58, fontSize: tabletPortrait ? 20 : 22 });
+      this.settingsButton.setButtonLayout({ width: tabletPortrait ? 126 : 150, height: tabletPortrait ? 50 : 58, fontSize: tabletPortrait ? 20 : 22 });
+      this.restartButton.setButtonLayout({ width: tabletPortrait ? 126 : 150, height: tabletPortrait ? 50 : 58, fontSize: tabletPortrait ? 20 : 22 });
+      this.restartButton.setPosition(width - metrics.scenePadding.right - this.restartButton.widthValue / 2, safe.top + 34);
+      this.settingsButton.setPosition(this.restartButton.x - this.restartButton.widthValue / 2 - 12 - this.settingsButton.widthValue / 2, safe.top + 34);
+      this.mapButton.setPosition(this.settingsButton.x - this.settingsButton.widthValue / 2 - 12 - this.mapButton.widthValue / 2, safe.top + 34);
+
       this.hearts.forEach((heart, index) => {
-        heart.setPosition(56 + index * 40, 92).setScale(1);
+        heart.setPosition(safe.left + 38 + index * (tabletPortrait ? 34 : 40), safe.top + 78).setScale(tabletPortrait ? 0.92 : 1);
       });
     }
 
-    if (this.prompt) {
-      const promptY = compactHud
-        ? Phaser.Math.Clamp(height * 0.24, 182, 228)
-        : Phaser.Math.Clamp(height * 0.235, 152, 198);
-      const promptScale = Math.min(
-        0.92,
-        compactHud ? width / 1160 : width / 980,
-        height / (compactHud ? 920 : 760) + 0.02,
-      );
-      this.prompt.setPosition(width * 0.5, promptY).setScale(promptScale);
-      this.prompt.baseScale = promptScale;
+    if (this.prompt && this.currentChallenge) {
+      const layoutKey = `${layout.mode}-${Math.round(layout.prompt.width)}-${Math.round(layout.prompt.height)}`;
+      if (this.promptLayoutKey !== layoutKey) {
+        this.refreshPromptCard();
+      } else {
+        this.prompt.setPosition(layout.prompt.x, layout.prompt.y);
+      }
     }
 
-    this.debugPanel.setPosition(148, 182);
+    this.debugPanel.setPosition(safe.left + 116, safe.top + 170);
     this.settingsPanel?.relayout();
   }
 
-  drawHudPanels(width, height, compactHud = false, tinyHud = false) {
+  drawHudPanels(layout) {
+    const { width, height } = this.scale;
+    const { mode, safe } = layout;
     const drawPanel = (graphics, x, y, panelWidth, panelHeight, fill = 0x135274) => {
       graphics.clear();
       if (panelWidth <= 0 || panelHeight <= 0) {
@@ -308,27 +498,39 @@ export class LevelScene extends Phaser.Scene {
       graphics.strokeRoundedRect(x, y, panelWidth, panelHeight, 24);
     };
 
-    if (compactHud) {
-      if (tinyHud) {
-        drawPanel(this.hudLeftPanel, 8, 10, 124, 72, 0x175879);
-        drawPanel(this.hudCenterPanel, width * 0.5 - 72, 8, 144, 60, 0x175879);
-        drawPanel(this.hudRightPanel, width - 86, 10, 78, 124, 0x175879);
-        return;
-      }
-
-      drawPanel(this.hudLeftPanel, 12, 12, 172, 82, 0x175879);
-      drawPanel(this.hudCenterPanel, width * 0.5 - 86, 10, 172, 70, 0x175879);
-      drawPanel(this.hudRightPanel, width - 104, 12, 92, 150, 0x175879);
+    if (mode === 'phone-portrait') {
+      drawPanel(this.hudLeftPanel, safe.left, safe.top, 124, 70, 0x175879);
+      drawPanel(this.hudCenterPanel, width * 0.5 - 92, safe.top + 50, 184, 52, 0x175879);
+      drawPanel(this.hudRightPanel, safe.right - 220, safe.top, 220, 54, 0x175879);
       return;
     }
 
-    drawPanel(this.hudLeftPanel, 18, 14, 212, 108, 0x175879);
-    drawPanel(this.hudCenterPanel, width * 0.5 - 150, 12, 300, 86, 0x175879);
-    drawPanel(this.hudRightPanel, width - 430, 14, 398, 68, 0x175879);
+    if (mode === 'phone-landscape') {
+      drawPanel(this.hudLeftPanel, safe.left, safe.top, 170, 62, 0x175879);
+      drawPanel(this.hudCenterPanel, width * 0.5 - 96, safe.top - 2, 192, 56, 0x175879);
+      drawPanel(this.hudRightPanel, safe.right - 238, safe.top, 238, 52, 0x175879);
+      return;
+    }
+
+    if (mode === 'tablet-portrait') {
+      drawPanel(this.hudLeftPanel, safe.left, safe.top, 190, 92, 0x175879);
+      drawPanel(this.hudCenterPanel, width * 0.5 - 132, safe.top + 54, 264, 64, 0x175879);
+      drawPanel(this.hudRightPanel, safe.right - 360, safe.top, 360, 60, 0x175879);
+      return;
+    }
+
+    drawPanel(this.hudLeftPanel, safe.left, safe.top, 212, 108, 0x175879);
+    drawPanel(this.hudCenterPanel, width * 0.5 - 150, safe.top - 2, 300, 86, 0x175879);
+    drawPanel(this.hudRightPanel, safe.right - 398, safe.top, 398, 68, 0x175879);
   }
 
   updateHud() {
-    const title = this.mode === 'quick' ? (this.scale.width < 520 ? 'Quick' : 'Quick Play') : this.scale.width < 520 ? `Level ${this.levelId}` : this.level.title;
+    const metrics = this.layoutProfile?.metrics ?? getViewportMetrics(this);
+    const title = this.mode === 'quick'
+      ? metrics.isPhone ? 'Quick' : 'Quick Play'
+      : metrics.isPhone || metrics.isTabletPortrait
+        ? `Level ${this.levelId}`
+        : this.level.title;
     this.levelText.setText(title);
     this.scoreText.setText(`Score ${this.state.score}`);
     this.waveText.setText(
@@ -401,15 +603,14 @@ export class LevelScene extends Phaser.Scene {
     this.currentTargetSlots = this.buildTargetSlots(this.currentChallenge.options.length);
     this.waveStartedAt = this.time.now + 160;
 
-    this.prompt = createPromptCard(this, this.scale.width * 0.5, this.scale.height * 0.22, this.currentChallenge).setDepth(DEPTHS.UI);
+    this.refreshPromptCard(false);
     this.layout();
-    const promptBaseScale = this.prompt.baseScale ?? this.prompt.scaleX;
-    this.prompt.setAlpha(0).setScale(promptBaseScale * 0.96);
+    this.prompt.setAlpha(0).setScale(0.98);
     this.tweens.add({
       targets: this.prompt,
       alpha: 1,
-      scaleX: promptBaseScale,
-      scaleY: promptBaseScale,
+      scaleX: 1,
+      scaleY: 1,
       duration: 180,
       ease: 'Back.Out',
     });
@@ -491,14 +692,94 @@ export class LevelScene extends Phaser.Scene {
   }
 
   buildTargetSlots(total) {
-    const width = this.scale.width;
-    const height = this.scale.height;
-    const layoutTop = height * (width < 720 ? 0.5 : 0.48);
-    const layoutBottom = height * (width < 720 ? 0.84 : 0.86);
+    const layout = this.layoutProfile ?? this.getResponsiveLayout();
+    const { width, height } = this.scale;
+
+    if (layout.mode === 'phone-portrait') {
+      const top = height * 0.55;
+      const bottom = height * 0.9;
+      const gap = total <= 1 ? 0 : Math.min(124, (bottom - top) / Math.max(1, total - 1));
+      const xs = total >= 4 ? [width * 0.72, width * 0.8, width * 0.72, width * 0.8] : total === 3 ? [width * 0.74, width * 0.79, width * 0.74] : total === 2 ? [width * 0.74, width * 0.8] : [width * 0.78];
+      const sizeScale = total >= 4 ? 0.48 : total === 3 ? 0.54 : 0.6;
+      return Array.from({ length: total }, (_, index) => ({
+        x: xs[index] ?? width * 0.78,
+        y: top + index * gap,
+        sizeScale,
+      }));
+    }
+
+    if (layout.mode === 'phone-landscape') {
+      const rightX = width * 0.88;
+      const leftX = width * 0.75;
+      const top = height * 0.62;
+      const mid = height * 0.78;
+      const bottom = height * 0.92;
+      if (total === 4) {
+        return [
+          { x: leftX, y: top, sizeScale: 0.46 },
+          { x: rightX, y: top, sizeScale: 0.46 },
+          { x: leftX, y: mid, sizeScale: 0.46 },
+          { x: rightX, y: mid, sizeScale: 0.46 },
+        ];
+      }
+
+      if (total === 3) {
+        return [
+          { x: rightX, y: top, sizeScale: 0.48 },
+          { x: leftX, y: mid, sizeScale: 0.48 },
+          { x: rightX, y: bottom, sizeScale: 0.48 },
+        ];
+      }
+
+      if (total === 2) {
+        return [
+          { x: rightX, y: top + 8, sizeScale: 0.52 },
+          { x: rightX, y: bottom, sizeScale: 0.52 },
+        ];
+      }
+
+      return [{ x: rightX, y: mid, sizeScale: 0.56 }];
+    }
+
+    if (layout.mode === 'tablet-portrait') {
+      const xA = width * 0.71;
+      const xB = width * 0.84;
+      const top = height * 0.56;
+      const mid = height * 0.73;
+      const bottom = height * 0.89;
+      if (total === 4) {
+        return [
+          { x: xA, y: top, sizeScale: 0.66 },
+          { x: xB, y: top + 36, sizeScale: 0.66 },
+          { x: xA, y: mid + 12, sizeScale: 0.66 },
+          { x: xB, y: bottom, sizeScale: 0.66 },
+        ];
+      }
+
+      if (total === 3) {
+        return [
+          { x: xA, y: top, sizeScale: 0.72 },
+          { x: xB, y: mid, sizeScale: 0.72 },
+          { x: xA, y: bottom, sizeScale: 0.72 },
+        ];
+      }
+
+      if (total === 2) {
+        return [
+          { x: xA, y: top + 34, sizeScale: 0.78 },
+          { x: xB, y: bottom - 24, sizeScale: 0.78 },
+        ];
+      }
+
+      return [{ x: xB, y: mid, sizeScale: 0.82 }];
+    }
+
+    const layoutTop = height * 0.48;
+    const layoutBottom = height * 0.86;
     const centerY = (layoutTop + layoutBottom) / 2;
     const gap = total <= 1 ? 0 : (layoutBottom - layoutTop) / (total - 1);
-    const closeX = width * (width < 720 ? 0.76 : 0.81);
-    const farX = width * (width < 720 ? 0.88 : 0.9);
+    const closeX = width * 0.81;
+    const farX = width * 0.9;
     const midX = width * 0.85;
     const patterns = total >= 4
       ? [
@@ -840,8 +1121,9 @@ export class LevelScene extends Phaser.Scene {
 
     this.canShoot = false;
     this.audio.playCannon?.();
+    const cannonScale = this.cannon.scaleX || 1;
 
-    this.spawnSparkleBurst(this.cannon.x + 88, this.cannon.y - 26, 5);
+    this.spawnSparkleBurst(this.cannon.x + 88 * cannonScale, this.cannon.y - 26 * cannonScale, 5);
     this.tweens.add({
       targets: [this.cannonBarrel, this.cannonBase, this.cannonLabel],
       x: '-=14',
@@ -856,11 +1138,11 @@ export class LevelScene extends Phaser.Scene {
     });
 
     this.cameras.main.shake(90, 0.0032);
-    this.spawnSmokeBurst(this.cannon.x + 74, this.cannon.y - 28, 9);
+    this.spawnSmokeBurst(this.cannon.x + 74 * cannonScale, this.cannon.y - 28 * cannonScale, 9);
 
-    const start = new Phaser.Math.Vector2(this.cannon.x + 82, this.cannon.y - 22);
+    const start = new Phaser.Math.Vector2(this.cannon.x + 82 * cannonScale, this.cannon.y - 22 * cannonScale);
     const end = new Phaser.Math.Vector2(target.container.x - (target.option.targetStyle === 'marker' ? 0 : 20), target.container.y - 6);
-    const control = new Phaser.Math.Vector2((start.x + end.x) / 2, Math.min(start.y, end.y) - 150);
+    const control = new Phaser.Math.Vector2((start.x + end.x) / 2, Math.min(start.y, end.y) - 150 * Math.max(0.72, cannonScale));
     const path = new Phaser.Curves.QuadraticBezier(start, control, end);
     const cannonball = this.add.image(start.x, start.y, 'cannonball').setDepth(DEPTHS.FX).setScale(0.9);
 
@@ -1095,6 +1377,9 @@ export class LevelScene extends Phaser.Scene {
   }
 
   spawnFloatingText(x, y, text, color, size = 28) {
+    const safe = this.layoutProfile?.safe ?? getSafeBounds(this);
+    const clampedX = Phaser.Math.Clamp(x, safe.left + 56, safe.right - 56);
+    const clampedY = Phaser.Math.Clamp(y, safe.top + 60, safe.bottom - 48);
     const label = this.add.text(x, y, text, {
       fontFamily: 'Fredoka',
       fontSize: `${size}px`,
@@ -1103,10 +1388,11 @@ export class LevelScene extends Phaser.Scene {
       stroke: '#1b5f8c',
       strokeThickness: 8,
     }).setOrigin(0.5).setDepth(DEPTHS.FX);
+    label.setPosition(clampedX, clampedY);
 
     this.tweens.add({
       targets: label,
-      y: y - 44,
+      y: clampedY - 44,
       alpha: 0,
       scale: 1.12,
       duration: 700,
@@ -1367,11 +1653,3 @@ function templatesForTier(tier) {
     'hit_marker_matching_grouped_objects',
   ];
 }
-
-
-
-
-
-
-
-

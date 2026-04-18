@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { SCENES } from '../constants.js';
 import { STORY_LEVELS } from '../content/levels.js';
 import { formatReward } from '../helpers/formatters.js';
+import { getSafeBounds, getViewportMetrics } from '../helpers/layout.js';
 import { createBackdrop } from '../effects/BackdropFactory.js';
 import { BigButton } from '../ui/Button.js';
 
@@ -130,10 +131,48 @@ export class ResultsScene extends Phaser.Scene {
 
   layout() {
     const { width, height } = this.scale;
-    const panelWidth = Math.min(580, width * 0.86);
-    const panelHeight = Math.min(560, height * 0.72);
+    const metrics = getViewportMetrics(this);
+    const safe = getSafeBounds(this, metrics.scenePadding);
     const centerX = width / 2;
-    const centerY = height / 2 - 8;
+    const centerY = height / 2 - (metrics.isPhoneLandscape ? 2 : 8);
+    const panelWidth = Math.min(metrics.isPhone ? safe.width - 6 : 580, safe.width - 10);
+    const panelHeight = Math.min(metrics.isPhoneLandscape ? safe.height - 12 : metrics.isPhonePortrait ? safe.height - 18 : 560, safe.height - 14);
+    const titleBandWidth = Math.min(panelWidth - 24, metrics.isPhoneLandscape ? 292 : 440);
+    const rewardWidth = Math.min(panelWidth - 30, metrics.isPhoneLandscape ? panelWidth - 48 : 340);
+    const titleFontSize = metrics.isPhoneLandscape ? '38px' : metrics.isPhonePortrait ? '50px' : '56px';
+    const statFontSize = metrics.isPhoneLandscape ? '18px' : metrics.isPhonePortrait ? '22px' : '26px';
+    const unlockFontSize = metrics.isPhoneLandscape ? '15px' : metrics.isPhonePortrait ? '18px' : '20px';
+    const rewardFontSize = metrics.isPhoneLandscape ? '18px' : metrics.isPhonePortrait ? '22px' : '24px';
+
+    this.title.setStyle({
+      fontSize: titleFontSize,
+      strokeThickness: metrics.isPhone ? 8 : 10,
+    });
+    this.stats.setStyle({
+      fontSize: statFontSize,
+      lineSpacing: metrics.isPhoneLandscape ? 6 : 10,
+    });
+    this.unlockText.setStyle({
+      fontSize: unlockFontSize,
+      lineSpacing: metrics.isPhoneLandscape ? 4 : 8,
+      wordWrap: { width: rewardWidth },
+    });
+    this.rewardText.setStyle({
+      fontSize: rewardFontSize,
+      lineSpacing: metrics.isPhoneLandscape ? 6 : 8,
+      wordWrap: { width: rewardWidth - 18 },
+    });
+
+    this.primaryButton.setButtonLayout({
+      width: metrics.isPhoneLandscape ? 178 : metrics.isPhonePortrait ? panelWidth - 76 : 240,
+      height: metrics.isPhoneLandscape ? 56 : metrics.isPhonePortrait ? 72 : 78,
+      fontSize: metrics.isPhoneLandscape ? 24 : metrics.isPhonePortrait ? 30 : 34,
+    });
+    this.secondaryButton.setButtonLayout({
+      width: metrics.isPhoneLandscape ? 160 : metrics.isPhonePortrait ? panelWidth - 96 : 220,
+      height: metrics.isPhoneLandscape ? 50 : metrics.isPhonePortrait ? 60 : 68,
+      fontSize: metrics.isPhoneLandscape ? 22 : metrics.isPhonePortrait ? 26 : 28,
+    });
 
     this.panel.clear();
     this.panel.fillStyle(0xfff7df, 0.96);
@@ -143,23 +182,34 @@ export class ResultsScene extends Phaser.Scene {
 
     this.titleBand.clear();
     this.titleBand.fillStyle(0xffffff, 0.72);
-    this.titleBand.fillRoundedRect(centerX - 220, centerY - panelHeight / 2 + 26, 440, 92, 30);
+    this.titleBand.fillRoundedRect(centerX - titleBandWidth / 2, centerY - panelHeight / 2 + 22, titleBandWidth, metrics.isPhoneLandscape ? 68 : 92, 30);
     this.titleBand.fillStyle(this.result.success ? 0x86efc3 : 0xffd0cc, 0.18);
-    this.titleBand.fillRoundedRect(centerX - 220, centerY - panelHeight / 2 + 26, 440, 92, 30);
+    this.titleBand.fillRoundedRect(centerX - titleBandWidth / 2, centerY - panelHeight / 2 + 22, titleBandWidth, metrics.isPhoneLandscape ? 68 : 92, 30);
 
     this.rewardPanel.clear();
     this.rewardPanel.fillStyle(0xffffff, 0.68);
     this.rewardPanel.lineStyle(4, 0xffffff, 0.75);
-    this.rewardPanel.fillRoundedRect(centerX - 170, centerY - 16, 340, 96, 22);
-    this.rewardPanel.strokeRoundedRect(centerX - 170, centerY - 16, 340, 96, 22);
+    this.rewardPanel.fillRoundedRect(centerX - rewardWidth / 2, centerY - (metrics.isPhoneLandscape ? 2 : 16), rewardWidth, metrics.isPhoneLandscape ? 80 : 96, 22);
+    this.rewardPanel.strokeRoundedRect(centerX - rewardWidth / 2, centerY - (metrics.isPhoneLandscape ? 2 : 16), rewardWidth, metrics.isPhoneLandscape ? 80 : 96, 22);
 
-    this.titleSpark.setPosition(centerX + 188, centerY - panelHeight / 2 + 74);
-    this.title.setPosition(centerX, centerY - panelHeight / 2 + 74);
-    this.stats.setPosition(centerX, centerY - 94);
+    if (metrics.isPhoneLandscape) {
+      this.titleSpark.setPosition(centerX + titleBandWidth / 2 - 26, centerY - panelHeight / 2 + 54);
+      this.title.setPosition(centerX, centerY - panelHeight / 2 + 56);
+      this.stats.setPosition(centerX, centerY - 66);
+      this.rewardText.setPosition(centerX, centerY + 34);
+      this.unlockText.setPosition(centerX, centerY + 108);
+      this.primaryButton.setPosition(centerX - 96, centerY + panelHeight / 2 - 34);
+      this.secondaryButton.setPosition(centerX + 96, centerY + panelHeight / 2 - 34);
+      return;
+    }
+
+    this.titleSpark.setPosition(centerX + Math.min(188, titleBandWidth / 2 - 28), centerY - panelHeight / 2 + (metrics.isPhonePortrait ? 66 : 74));
+    this.title.setPosition(centerX, centerY - panelHeight / 2 + (metrics.isPhonePortrait ? 70 : 74));
+    this.stats.setPosition(centerX, centerY - (metrics.isPhonePortrait ? 88 : 94));
     this.rewardText.setPosition(centerX, centerY + 32);
-    this.unlockText.setPosition(centerX, centerY + 130);
-    this.primaryButton.setPosition(centerX, centerY + panelHeight / 2 - 112);
-    this.secondaryButton.setPosition(centerX, centerY + panelHeight / 2 - 28);
+    this.unlockText.setPosition(centerX, centerY + (metrics.isPhonePortrait ? 122 : 130));
+    this.primaryButton.setPosition(centerX, centerY + panelHeight / 2 - (metrics.isPhonePortrait ? 108 : 112));
+    this.secondaryButton.setPosition(centerX, centerY + panelHeight / 2 - (metrics.isPhonePortrait ? 30 : 28));
   }
 
   spawnConfetti(x, y, count) {
