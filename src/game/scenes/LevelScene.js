@@ -324,10 +324,10 @@ export class LevelScene extends Phaser.Scene {
         }
       : mode === 'phone-landscape'
         ? {
-            x: this.scale.width * 0.53,
-            y: safe.top + 92,
-            width: Math.min(safe.width - 220, 430),
-            height: 96,
+            x: safe.left + safe.width * 0.5,
+            y: safe.top + 36,
+            width: Math.min(safe.width - 28, 430),
+            height: 64,
           }
         : mode === 'tablet-portrait'
           ? {
@@ -365,18 +365,18 @@ export class LevelScene extends Phaser.Scene {
         ? {
             width: prompt.width,
             height: prompt.height,
-            radius: 22,
-            edgePad: 10,
-            titleAreaHeight: 38,
-            visualWidth: prompt.width - 20,
-            visualHeight: 28,
-            titleY: -15,
-            supportY: 1,
-            visualY: 20,
-            titleFontSize: 18,
-            supportFontSize: 12,
-            visualMaxWidth: prompt.width - 88,
-            visualMaxHeight: 24,
+            radius: 16,
+            edgePad: 8,
+            titleAreaHeight: 24,
+            visualWidth: prompt.width - 16,
+            visualHeight: 18,
+            titleY: -10,
+            supportY: -2,
+            visualY: 12,
+            titleFontSize: 15,
+            supportFontSize: 10,
+            visualMaxWidth: prompt.width - 86,
+            visualMaxHeight: 16,
             showSparkles: false,
           }
         : mode === 'tablet-portrait'
@@ -403,10 +403,10 @@ export class LevelScene extends Phaser.Scene {
 
     const gameplayBand = mode === 'phone-landscape'
       ? {
-          top: Math.max(safe.top + 160, prompt.y + prompt.height / 2 + 16),
+          top: Math.max(safe.top + 156, prompt.y + prompt.height / 2 + 58),
           bottom: safe.bottom - 10,
-          left: safe.left + 112,
-          right: safe.right - 10,
+          left: safe.left + 136,
+          right: safe.right - 18,
         }
       : mode === 'tablet-portrait'
         ? {
@@ -645,30 +645,31 @@ export class LevelScene extends Phaser.Scene {
       this.cannon.setPosition(width * 0.17, gameplayBottom - 26).setScale(0.58);
 
       this.levelText.setStyle({ fontSize: '15px', strokeThickness: 5 });
-      this.scoreText.setStyle({ fontSize: '15px', strokeThickness: 5 });
-      this.waveText.setStyle({ fontSize: '13px', strokeThickness: 4 });
+      this.scoreText.setStyle({ fontSize: '14px', strokeThickness: 5 });
+      this.waveText.setStyle({ fontSize: '12px', strokeThickness: 4 });
       this.comboText.setStyle({ fontSize: '13px', strokeThickness: 4 });
 
-      this.levelText.setPosition(safe.left + 12, safe.top + 7);
-      this.scoreText.setPosition(safe.left + 12, safe.top + 51);
-      this.waveText.setPosition(safe.left + 12, safe.top + 69);
-      this.comboText.setPosition(width * 0.5 - this.comboText.width / 2, layout.prompt.y + layout.prompt.height / 2 + 10);
+      this.levelText.setVisible(false);
+      this.scoreText.setPosition(safe.left + 12, safe.top + 106);
+      this.waveText.setPosition(safe.left + 12, safe.top + 131);
+      this.comboText.setPosition(width * 0.5 - this.comboText.width / 2, gameplayTop - 8);
 
-      const buttonY = safe.top + 20;
+      const buttonY = safe.top + 84;
       this.mapButton.setLabel(this.mode === 'quick' ? 'Menu' : 'Map');
       this.settingsButton.setLabel('Gear');
       this.restartButton.setLabel('Again');
-      this.mapButton.setButtonLayout({ width: 60, height: 38, fontSize: 14 });
-      this.settingsButton.setButtonLayout({ width: 68, height: 38, fontSize: 14 });
-      this.restartButton.setButtonLayout({ width: 74, height: 38, fontSize: 14 });
+      this.mapButton.setButtonLayout({ width: 58, height: 34, fontSize: 13 });
+      this.settingsButton.setButtonLayout({ width: 64, height: 34, fontSize: 13 });
+      this.restartButton.setButtonLayout({ width: 68, height: 34, fontSize: 13 });
       this.restartButton.setPosition(width - metrics.scenePadding.right - this.restartButton.widthValue / 2, buttonY);
       this.settingsButton.setPosition(this.restartButton.x - this.restartButton.widthValue / 2 - 8 - this.settingsButton.widthValue / 2, buttonY);
       this.mapButton.setPosition(this.settingsButton.x - this.settingsButton.widthValue / 2 - 8 - this.mapButton.widthValue / 2, buttonY);
 
       this.hearts.forEach((heart, index) => {
-        heart.setPosition(safe.left + 20 + index * 22, safe.top + 30).setScale(0.68);
+        heart.setPosition(safe.left + 18 + index * 22, safe.top + 84).setScale(0.62);
       });
     } else {
+      this.levelText.setVisible(true);
       const tabletPortrait = layout.mode === 'tablet-portrait';
       this.island.setPosition(width * (tabletPortrait ? 0.11 : 0.12), height * 0.81).setScale(tabletPortrait ? 1.08 : Math.min(1.32, width / 950));
       this.palm.setPosition(width * 0.05, height * (tabletPortrait ? 0.57 : 0.61)).setScale(tabletPortrait ? 0.88 : Math.min(1.02, width / 1220));
@@ -741,9 +742,10 @@ export class LevelScene extends Phaser.Scene {
     }
 
     if (mode === 'phone-landscape') {
-      drawPanel(this.hudLeftPanel, safe.left, safe.top, 142, 46, 0x175879);
-      drawPanel(this.hudCenterPanel, safe.left + 2, safe.top + 48, 136, 40, 0x175879);
-      drawPanel(this.hudRightPanel, safe.right - 220, safe.top, 220, 44, 0x175879);
+      const hudTop = safe.top + 68;
+      drawPanel(this.hudLeftPanel, safe.left, hudTop, 126, 34, 0x175879);
+      drawPanel(this.hudCenterPanel, safe.left, hudTop + 38, 148, 64, 0x175879);
+      drawPanel(this.hudRightPanel, safe.right - 214, hudTop, 214, 34, 0x175879);
       return;
     }
 
@@ -778,8 +780,8 @@ export class LevelScene extends Phaser.Scene {
     this.comboText.setText(this.state.streak >= 2 ? `Combo x${this.state.streak}` : '');
 
     if (mode === 'phone-landscape' && safe) {
-      this.scoreText.setPosition(safe.left + 12, safe.top + 51);
-      this.waveText.setPosition(safe.left + 12, safe.top + 69);
+      this.scoreText.setPosition(safe.left + 12, safe.top + 106);
+      this.waveText.setPosition(safe.left + 12, safe.top + 131);
       this.comboText.setX(this.scale.width * 0.5 - this.comboText.width / 2);
     } else {
       this.scoreText.setX(this.scale.width * 0.5 - this.scoreText.width / 2);
@@ -958,39 +960,42 @@ export class LevelScene extends Phaser.Scene {
 
     if (layout.mode === 'phone-landscape') {
       const band = layout.gameplayBand;
-      const bandWidth = band.right - band.left;
-      const topRowY = band.top + 32;
-      const midRowY = band.top + Math.min(88, (band.bottom - band.top) * 0.46);
-      const bottomRowY = band.bottom - 34;
-      const leftColumnX = Phaser.Math.Clamp(band.left + bandWidth * 0.37, band.left + 150, band.right - 250);
-      const centerColumnX = Phaser.Math.Clamp(band.left + bandWidth * 0.56, band.left + 215, band.right - 170);
-      const rightColumnX = Phaser.Math.Clamp(band.left + bandWidth * 0.8, band.left + 300, band.right - 72);
+      const bandWidth = Math.max(220, band.right - band.left);
+      const bandHeight = Math.max(120, band.bottom - band.top);
+      const leftX = band.left + bandWidth * 0.18;
+      const midLeftX = band.left + bandWidth * 0.34;
+      const centerX = band.left + bandWidth * 0.52;
+      const midRightX = band.left + bandWidth * 0.7;
+      const rightX = band.left + bandWidth * 0.86;
+      const rowCenterY = band.top + bandHeight * 0.58;
+      const topRowY = band.top + Math.min(40, bandHeight * 0.26);
+      const bottomRowY = band.bottom - Math.min(54, bandHeight * 0.22);
 
       if (total === 4) {
         return [
-          { x: leftColumnX, y: topRowY, sizeScale: 0.4 },
-          { x: rightColumnX, y: topRowY, sizeScale: 0.4 },
-          { x: leftColumnX, y: bottomRowY, sizeScale: 0.4 },
-          { x: rightColumnX, y: bottomRowY, sizeScale: 0.4 },
+          { x: midLeftX, y: topRowY, sizeScale: 0.35 },
+          { x: rightX, y: topRowY, sizeScale: 0.35 },
+          { x: midLeftX, y: bottomRowY, sizeScale: 0.35 },
+          { x: rightX, y: bottomRowY, sizeScale: 0.35 },
         ];
       }
 
       if (total === 3) {
         return [
-          { x: centerColumnX, y: topRowY, sizeScale: 0.42 },
-          { x: leftColumnX, y: bottomRowY, sizeScale: 0.42 },
-          { x: rightColumnX, y: bottomRowY, sizeScale: 0.42 },
+          { x: leftX, y: rowCenterY, sizeScale: 0.39 },
+          { x: centerX, y: rowCenterY, sizeScale: 0.39 },
+          { x: rightX, y: rowCenterY, sizeScale: 0.39 },
         ];
       }
 
       if (total === 2) {
         return [
-          { x: centerColumnX + 28, y: midRowY - 12, sizeScale: 0.46 },
-          { x: rightColumnX, y: bottomRowY, sizeScale: 0.46 },
+          { x: midLeftX, y: rowCenterY, sizeScale: 0.45 },
+          { x: rightX, y: rowCenterY, sizeScale: 0.45 },
         ];
       }
 
-      return [{ x: centerColumnX, y: midRowY, sizeScale: 0.5 }];
+      return [{ x: midRightX, y: rowCenterY, sizeScale: 0.49 }];
     }
 
     if (layout.mode === 'tablet-portrait') {
@@ -1060,6 +1065,7 @@ export class LevelScene extends Phaser.Scene {
   }
 
   spawnTarget(option, index, total) {
+    const isPhoneLandscapeLayout = this.layoutProfile?.mode === 'phone-landscape';
     const isMarker = option.targetStyle === 'marker';
     const isRaft = option.targetStyle === 'raft';
     const slot = this.currentTargetSlots?.[index] ?? {
@@ -1151,9 +1157,11 @@ export class LevelScene extends Phaser.Scene {
       wake,
       baseWakeScale: wakeScale,
       baseY: y,
-      speed: this.currentChallenge.shipSpeed + index * 2,
-      bobAmp: (8 + this.currentChallenge.movementAmount * 5) * (sizeScale < 1 ? 0.94 : 1),
-      bobRate: 0.0021 + index * 0.00016,
+      speed: isPhoneLandscapeLayout ? this.currentChallenge.shipSpeed : this.currentChallenge.shipSpeed + index * 2,
+      bobAmp: isPhoneLandscapeLayout
+        ? (2.8 + this.currentChallenge.movementAmount * 1.4) * (sizeScale < 1 ? 0.92 : 1)
+        : (8 + this.currentChallenge.movementAmount * 5) * (sizeScale < 1 ? 0.94 : 1),
+      bobRate: isPhoneLandscapeLayout ? 0.0017 + index * 0.00008 : 0.0021 + index * 0.00016,
       phase: Math.random() * Math.PI * 2,
       sunk: false,
       baseHullScale: hullScale,
