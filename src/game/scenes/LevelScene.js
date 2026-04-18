@@ -962,40 +962,49 @@ export class LevelScene extends Phaser.Scene {
       const band = layout.gameplayBand;
       const bandWidth = Math.max(220, band.right - band.left);
       const bandHeight = Math.max(120, band.bottom - band.top);
-      const leftX = band.left + bandWidth * 0.18;
-      const midLeftX = band.left + bandWidth * 0.34;
-      const centerX = band.left + bandWidth * 0.52;
-      const midRightX = band.left + bandWidth * 0.7;
-      const rightX = band.left + bandWidth * 0.86;
       const rowCenterY = band.top + bandHeight * 0.58;
       const topRowY = band.top + Math.min(40, bandHeight * 0.26);
       const bottomRowY = band.bottom - Math.min(54, bandHeight * 0.22);
+      // Phone landscape uses hard slots plus a cannon no-go zone so the left answer
+      // never crowds the cannon and targets cannot collapse into each other.
+      const cannonGuardCenter = Math.min(
+        Math.max((this.cannon?.x ?? width * 0.17) + 314, band.left + 290),
+        band.right - 320,
+      );
+      const rightCenter = band.right - 42;
+      const middleCenter = Phaser.Math.Clamp(
+        (cannonGuardCenter + rightCenter) / 2,
+        cannonGuardCenter + 156,
+        rightCenter - 156,
+      );
+      const leftColumnX = Math.min(cannonGuardCenter + 56, middleCenter - 84);
+      const rightColumnX = rightCenter - 12;
 
       if (total === 4) {
         return [
-          { x: midLeftX, y: topRowY, sizeScale: 0.35 },
-          { x: rightX, y: topRowY, sizeScale: 0.35 },
-          { x: midLeftX, y: bottomRowY, sizeScale: 0.35 },
-          { x: rightX, y: bottomRowY, sizeScale: 0.35 },
+          { x: leftColumnX, y: topRowY, sizeScale: 0.34 },
+          { x: rightColumnX, y: topRowY, sizeScale: 0.34 },
+          { x: leftColumnX, y: bottomRowY, sizeScale: 0.34 },
+          { x: rightColumnX, y: bottomRowY, sizeScale: 0.34 },
         ];
       }
 
       if (total === 3) {
         return [
-          { x: leftX, y: rowCenterY, sizeScale: 0.39 },
-          { x: centerX, y: rowCenterY, sizeScale: 0.39 },
-          { x: rightX, y: rowCenterY, sizeScale: 0.39 },
+          { x: cannonGuardCenter, y: rowCenterY, sizeScale: 0.38 },
+          { x: middleCenter, y: rowCenterY, sizeScale: 0.38 },
+          { x: rightCenter, y: rowCenterY, sizeScale: 0.38 },
         ];
       }
 
       if (total === 2) {
         return [
-          { x: midLeftX, y: rowCenterY, sizeScale: 0.45 },
-          { x: rightX, y: rowCenterY, sizeScale: 0.45 },
+          { x: cannonGuardCenter + 36, y: rowCenterY, sizeScale: 0.43 },
+          { x: rightCenter, y: rowCenterY, sizeScale: 0.43 },
         ];
       }
 
-      return [{ x: midRightX, y: rowCenterY, sizeScale: 0.49 }];
+      return [{ x: middleCenter + 18, y: rowCenterY, sizeScale: 0.47 }];
     }
 
     if (layout.mode === 'tablet-portrait') {
