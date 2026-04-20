@@ -26,7 +26,9 @@ export class ResultsScene extends Phaser.Scene {
 
     this.panel = this.add.graphics();
     this.titleBand = this.add.graphics();
+    this.statsPanel = this.add.graphics();
     this.rewardPanel = this.add.graphics();
+    this.infoPanel = this.add.graphics();
     this.titleSpark = this.add.image(0, 0, 'spark').setScale(0.9);
     this.title = this.add.text(0, 0, this.getTitle(), {
       fontFamily: 'Fredoka',
@@ -44,6 +46,27 @@ export class ResultsScene extends Phaser.Scene {
       color: '#26496a',
       align: 'center',
       lineSpacing: 10,
+    }).setOrigin(0.5);
+    this.statPrimary = this.add.text(0, 0, '', {
+      fontFamily: 'Fredoka',
+      fontSize: '24px',
+      fontStyle: '700',
+      color: '#26496a',
+      align: 'center',
+    }).setOrigin(0.5);
+    this.statSecondary = this.add.text(0, 0, '', {
+      fontFamily: 'Fredoka',
+      fontSize: '18px',
+      fontStyle: '600',
+      color: '#355f80',
+      align: 'center',
+    }).setOrigin(0.5);
+    this.statTertiary = this.add.text(0, 0, '', {
+      fontFamily: 'Fredoka',
+      fontSize: '18px',
+      fontStyle: '600',
+      color: '#355f80',
+      align: 'center',
     }).setOrigin(0.5);
 
     this.unlockText = this.add.text(0, 0, '', {
@@ -118,14 +141,21 @@ export class ResultsScene extends Phaser.Scene {
     ];
 
     this.stats.setText(coreLines.join('\n'));
+    this.statPrimary.setText(coreLines[0]);
+    this.statSecondary.setText(coreLines[1]);
+    this.statTertiary.setText(coreLines[2]);
     this.rewardText.setText(`Treasure haul\n${rewardLine}`);
 
     if (this.result.newUnlocks?.length) {
-      this.unlockText.setText(`New unlocks\n${this.result.newUnlocks.map((unlock) => unlock.label).join('  |  ')}`);
+      const unlockLabels = this.result.newUnlocks.map((unlock) => unlock.label);
+      const compactUnlocks = unlockLabels.length > 2
+        ? `${unlockLabels.slice(0, 2).join('  |  ')}  |  +${unlockLabels.length - 2} more`
+        : unlockLabels.join('  |  ');
+      this.unlockText.setText(`New unlocks\n${compactUnlocks}`);
     } else if (this.result.mode === 'quick') {
-      this.unlockText.setText('Fast hits and long streaks bring home bigger treasure.');
+      this.unlockText.setText('Fast streaks bring bigger treasure.');
     } else {
-      this.unlockText.setText('Clean shots, combos, and full hearts earn richer rewards.');
+      this.unlockText.setText('Clean shots and hearts earn richer rewards.');
     }
   }
 
@@ -162,6 +192,18 @@ export class ResultsScene extends Phaser.Scene {
       lineSpacing: metrics.isPhoneLandscape ? 6 : 8,
       wordWrap: { width: rewardWidth - 18 },
     });
+    this.statPrimary.setStyle({
+      fontSize: metrics.isPhoneLandscape ? '22px' : '24px',
+      strokeThickness: metrics.isPhoneLandscape ? 6 : 8,
+    });
+    this.statSecondary.setStyle({
+      fontSize: metrics.isPhoneLandscape ? '17px' : '18px',
+      strokeThickness: metrics.isPhoneLandscape ? 5 : 6,
+    });
+    this.statTertiary.setStyle({
+      fontSize: metrics.isPhoneLandscape ? '17px' : '18px',
+      strokeThickness: metrics.isPhoneLandscape ? 5 : 6,
+    });
 
     this.primaryButton.setButtonLayout({
       width: metrics.isPhoneLandscape ? 178 : metrics.isPhonePortrait ? panelWidth - 76 : 240,
@@ -193,15 +235,62 @@ export class ResultsScene extends Phaser.Scene {
     this.rewardPanel.strokeRoundedRect(centerX - rewardWidth / 2, centerY - (metrics.isPhoneLandscape ? 2 : 16), rewardWidth, metrics.isPhoneLandscape ? 80 : 96, 22);
 
     if (metrics.isPhoneLandscape) {
-      this.titleSpark.setPosition(centerX + titleBandWidth / 2 - 26, centerY - panelHeight / 2 + 54);
-      this.title.setPosition(centerX, centerY - panelHeight / 2 + 56);
-      this.stats.setPosition(centerX, centerY - 66);
-      this.rewardText.setPosition(centerX, centerY + 34);
-      this.unlockText.setPosition(centerX, centerY + 108);
-      this.primaryButton.setPosition(centerX - 96, centerY + panelHeight / 2 - 34);
-      this.secondaryButton.setPosition(centerX + 96, centerY + panelHeight / 2 - 34);
+      const panelLeft = centerX - panelWidth / 2;
+      const panelTop = centerY - panelHeight / 2;
+      const titleTop = panelTop + 18;
+      const titleHeight = 56;
+      const statsTop = panelTop + 88;
+      const statsHeight = 96;
+      const rewardTop = panelTop + 190;
+      const rewardHeight = 68;
+      const infoTop = panelTop + 266;
+      const infoHeight = 34;
+      const buttonY = panelTop + panelHeight - 28;
+
+      this.stats.setVisible(false);
+      this.statPrimary.setVisible(true);
+      this.statSecondary.setVisible(true);
+      this.statTertiary.setVisible(true);
+
+      this.statsPanel.clear();
+      this.statsPanel.fillStyle(0xffffff, 0.7);
+      this.statsPanel.lineStyle(4, 0xffffff, 0.75);
+      this.statsPanel.fillRoundedRect(panelLeft + 24, statsTop, panelWidth - 48, statsHeight, 24);
+      this.statsPanel.strokeRoundedRect(panelLeft + 24, statsTop, panelWidth - 48, statsHeight, 24);
+
+      this.rewardPanel.clear();
+      this.rewardPanel.fillStyle(0xffffff, 0.72);
+      this.rewardPanel.lineStyle(4, 0xffffff, 0.78);
+      this.rewardPanel.fillRoundedRect(panelLeft + 24, rewardTop, panelWidth - 48, rewardHeight, 22);
+      this.rewardPanel.strokeRoundedRect(panelLeft + 24, rewardTop, panelWidth - 48, rewardHeight, 22);
+
+      this.infoPanel.clear();
+      this.infoPanel.fillStyle(0xffffff, 0.64);
+      this.infoPanel.lineStyle(4, 0xd7edf7, 0.9);
+      this.infoPanel.fillRoundedRect(panelLeft + 32, infoTop, panelWidth - 64, infoHeight, 20);
+      this.infoPanel.strokeRoundedRect(panelLeft + 32, infoTop, panelWidth - 64, infoHeight, 20);
+
+      this.titleSpark.setPosition(centerX + titleBandWidth / 2 - 26, titleTop + titleHeight / 2);
+      this.title.setPosition(centerX, titleTop + titleHeight / 2 + 1);
+      this.statPrimary.setPosition(centerX, statsTop + 20);
+      this.statSecondary.setPosition(centerX, statsTop + 52);
+      this.statTertiary.setPosition(centerX, statsTop + 80);
+      this.rewardText.setPosition(centerX, rewardTop + rewardHeight / 2);
+      this.unlockText.setPosition(centerX, infoTop + 16).setWordWrapWidth(panelWidth - 92);
+      this.fitTextHeight(this.title, titleHeight - 10, 28);
+      this.fitTextHeight(this.rewardText, rewardHeight - 14, 16);
+      this.fitTextHeight(this.unlockText, infoHeight - 10, 11);
+      this.primaryButton.setPosition(centerX - 96, buttonY);
+      this.secondaryButton.setPosition(centerX + 96, buttonY);
       return;
     }
+
+    this.stats.setVisible(true);
+    this.statPrimary.setVisible(false);
+    this.statSecondary.setVisible(false);
+    this.statTertiary.setVisible(false);
+    this.statsPanel.clear();
+    this.infoPanel.clear();
 
     this.titleSpark.setPosition(centerX + Math.min(188, titleBandWidth / 2 - 28), centerY - panelHeight / 2 + (metrics.isPhonePortrait ? 66 : 74));
     this.title.setPosition(centerX, centerY - panelHeight / 2 + (metrics.isPhonePortrait ? 70 : 74));
@@ -210,6 +299,19 @@ export class ResultsScene extends Phaser.Scene {
     this.unlockText.setPosition(centerX, centerY + (metrics.isPhonePortrait ? 122 : 130));
     this.primaryButton.setPosition(centerX, centerY + panelHeight / 2 - (metrics.isPhonePortrait ? 108 : 112));
     this.secondaryButton.setPosition(centerX, centerY + panelHeight / 2 - (metrics.isPhonePortrait ? 30 : 28));
+  }
+
+  fitTextHeight(textObject, maxHeight, minFontSize) {
+    const baseSize = Number.parseInt(String(textObject.style.fontSize), 10);
+    if (!Number.isFinite(baseSize)) {
+      return;
+    }
+
+    let nextSize = baseSize;
+    while (textObject.height > maxHeight && nextSize > minFontSize) {
+      nextSize -= 1;
+      textObject.setStyle({ fontSize: `${nextSize}px` });
+    }
   }
 
   spawnConfetti(x, y, count) {

@@ -1898,7 +1898,6 @@ function templatesForTier(tier) {
       'choose_total_from_visual_groups',
       'choose_larger_or_smaller_ship',
       'find_remaining_after_storm',
-      'split_treasure_evenly',
       'hit_marker_matching_grouped_objects',
     ];
   }
@@ -1908,8 +1907,6 @@ function templatesForTier(tier) {
       'choose_total_from_visual_groups',
       'choose_larger_or_smaller_ship',
       'find_remaining_after_storm',
-      'split_treasure_evenly',
-      'count_equal_barrels_or_crates',
       'hit_marker_matching_grouped_objects',
     ];
   }
